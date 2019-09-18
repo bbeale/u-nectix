@@ -42,6 +42,8 @@ def get_stuff_to_trade():
     print("DT count:        {}".format(account.daytrade_count))
     print("DT buying power: ${}".format(account.daytrading_buying_power))
 
+    datafile = None
+
     # Check if our account is restricted from trading.
     if account.trading_blocked:
         print("Account is currently restricted from trading.")
@@ -59,7 +61,7 @@ def get_stuff_to_trade():
         symbol = i.symbol
         today = date.fromtimestamp(time.time()).strftime("%Y-%m-%dT09:30:00-04:00")
         start = date.fromtimestamp(time.time() - 604800).strftime("%Y-%m-%dT09:30:00-04:00")
-        barset = api.get_barset(symbol, "1Min", start=start, end=today)
+        barset = api.get_barset(symbol, "minute", after=start)
         symbol_bars = barset[symbol]
 
         # Get trading volume
@@ -67,51 +69,79 @@ def get_stuff_to_trade():
 
         # And closing price
         closeprices = [bar.c for bar in symbol_bars if bar is not None]
-        if volume is None:
+        if volume is None or closeprices is None:
             continue
 
         else:
 
-            print("Symbol: ", symbol)
-            # barset = api.get_barset(symbol[0], "15Min", after="2019-09-12T07:00:00-04:00")
-            # asset = api.get_asset(symbol[0])
-            # symbol_bars = barset[symbol[0]]
+            datafile = os.path.relpath("data/{}_data_{}.csv".format(symbol, time.time()))
+            with open(datafile, "w+") as df:
+                df.write("time,open,high,low,close,volume\n")
+                for b in barset[symbol]:
+                    df.write("{},{},{},{},{},{}\n".format(b.t, b.o, b.c, b.h, b.l, b.v))
 
-            alfavantage = TimeSeries(key=config["alpha_vantage"]["API_KEY"], output_format="pandas")
-            indicators = TechIndicators(key=config["alpha_vantage"]["API_KEY"], output_format="pandas")
+        if type(datafile) is str and len(datafile) > 0:
+            return datafile
+        else:
+            raise FileExistsError
 
-            tradedata = dict()
-            tradedata["symbol"] = symbol
-            # Get current ticker price
-            tradedata["close"] = closeprices[0]
-            # Get json object with the intraday data and another with  the call's metadata
-            intraday, i_meta = alfavantage.get_intraday(symbol, interval="1min")
-            tradedata["intraday"] = intraday['4. close']
-            # Get the MACD
-            macd, macd_meta = indicators.get_macd(symbol, interval="1min")
-            tradedata["macd"] = macd["MACD"]
-            # Get the RSI
-            rsi, rsi_meta = indicators.get_rsi(symbol, interval="1min", time_period=100)
-            tradedata["rsi"] = rsi["RSI"]
-            # Get the RoC
-            roc, roc_meta = indicators.get_roc(symbol, interval="1min", time_period=100)
-            tradedata["roc"] = roc["ROC"]
-            # Get stochastic oscillator
-            stoc, stoc_meta = indicators.get_stoch(symbol, interval="1min")
-            tradedata["stoc"] = stoc
-            # And finally, calculate the limit
-            limit_price = closeprices[0] - closeprices[0] * .1
-            tradedata["limit"] = limit_price
 
-            if len(volume) > 0:
-                vmean = mean(volume)
-                tradedata["vmean"] = vmean
-                vol_assets.append(tradedata)
-                # vol_assets.append((symbol, vmean, closeprices))
+def calculate_indicators(d_file):
+    if not d_file or d_file is None:
+        raise ValueError("Invalid argument value")
 
-        if len(vol_assets) > 3:
-            break
-    return vol_assets
+    data = None
+    try:
+        with open(d_file, "r+") as df:
+            data = df.readlines()
+    except FileExistsError:
+        raise FileExistsError
+
+    print(data)
+
+    # TODO: https://github.com/peerchemist/finta
+    print(".")
+
+    # barset = api.get_barset(symbol[0], "15Min", after=start)
+    # asset = api.get_asset(symbol[0])
+    # symbol_bars = barset[symbol[0]]
+
+    # alfavantage = TimeSeries(key=config["alpha_vantage"]["API_KEY"], output_format="pandas")
+    # indicators = TechIndicators(key=config["alpha_vantage"]["API_KEY"], output_format="pandas")
+    #
+    # tradedata = dict()
+    # tradedata["symbol"] = symbol
+    # # Get current ticker price
+    # tradedata["close"] = closeprices[0]
+    # # Get json object with the intraday data and another with  the call's metadata
+    # intraday, i_meta = alfavantage.get_intraday(symbol, interval="1min")
+    # tradedata["intraday"] = intraday['4. close']
+    # # Get the MACD
+    # macd, macd_meta = indicators.get_macd(symbol, interval="1min")
+    # tradedata["macd"] = macd["MACD"]
+    # # Get the RSI
+    # rsi, rsi_meta = indicators.get_rsi(symbol, interval="1min", time_period=100)
+    # tradedata["rsi"] = rsi["RSI"]
+    # # Get the RoC
+    # roc, roc_meta = indicators.get_roc(symbol, interval="1min", time_period=100)
+    # tradedata["roc"] = roc["ROC"]
+    # # Get stochastic oscillator
+    # stoc, stoc_meta = indicators.get_stoch(symbol, interval="1min")
+    # tradedata["stoc"] = stoc
+    # # And finally, calculate the limit
+    # limit_price = closeprices[0] - closeprices[0] * .1
+    # tradedata["limit"] = limit_price
+    #
+    # if len(volume) > 0:
+    #     vmean = mean(volume)
+    #     tradedata["vmean"] = vmean
+    #     vol_assets.append(tradedata)
+    #     # vol_assets.append((symbol, vmean, closeprices))
+    #
+    # if len(vol_assets) > 3:
+    #     break
+    #
+    # return vol_assets
 
 
 def find_best_security(asset_list):
@@ -170,4 +200,5 @@ def find_best_security(asset_list):
 
 
 if __name__ == "__main__":
-    get_stuff_to_trade()
+    raw_data = get_stuff_to_trade()
+    indicators = calculate_indicators(raw_data)
