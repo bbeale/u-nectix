@@ -1,9 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from statistics import mean
 from datetime import date, timedelta
 from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.sectorperformance import SectorPerformances
 from alpha_vantage.techindicators import TechIndicators
+from finta import TA
 import alpaca_trade_api as tradeapi
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import configparser
 import pprint
 import sys
@@ -28,21 +34,62 @@ api = tradeapi.REST(
 )
 
 
+def bullish_candlestick_patterns(c1, c2, c3):
+    """Pilfered from Alpaca Slack channel
+
+    :param c1:
+    :param c2:
+    :param c3:
+    :return:
+    """
+    pattern = None
+    # LOCH bullish
+    if c1.low < c1.open < c1.close <= c1.high and \
+            c1.high - c1.close < c1.open - c1.low and \
+            c1.close - c1.open < c1.open - c1.low:
+        pattern = 'hammer'
+    if c1.low <= c1.open < c1.close < c1.high and \
+            c1.high - c1.close > c1.open - c1.low and \
+            c1.close - c1.open < c1.high - c1.close:
+        pattern = 'inverseHammer'
+    # LCOH bearish
+    if c2.low < c2.close < c2.open < c2.high and \
+            c1.low <= c1.open < c1.close < c1.high and \
+            c1.open < c2.close and \
+            c1.close - c1.open > c2.open - c2.close:
+        pattern = 'bullishEngulfing'
+    if c2.low < c2.close < c2.open < c2.high and \
+            c1.low <= c1.open < c1.close < c1.high and \
+            c1.open < c2.close and \
+            c1.close > c2.close + (c2.open - c2.close) / 2:
+        pattern = 'piercingLine'
+    if c3.low < c3.close < c3.open < c3.high and \
+            c1.low <= c1.open < c1.close < c1.high and \
+            abs(c2.open - c2.close) < abs(c3.open - c3.close) and \
+            abs(c2.open - c2.close) < abs(c1.open - c1.close):
+        pattern = 'morningStar'
+    if c3.low <= c3.open < c3.close < c3.high and \
+            c2.low <= c2.open < c2.close < c2.high and \
+            c1.low <= c1.open < c1.close < c1.high and \
+            c3.close <= c2.open and \
+            c2.close <= c1.open:
+        pattern = 'threeWhiteSoldiers'
+    return pattern
+
+
 def get_stuff_to_trade():
     """ Loops through all securities with volume data, grabs the best ones for trading according to the indicators
 
     :return vol_assets: list of dictionaries representing intraday, MACD, RSI, RoC, and stochastic oscillators
     """
     account                 = api.get_account()
+
     print("Account #:       {}".format(account.account_number))
     print("Currency:        {}".format(account.currency))
     print("Cash value:      ${}".format(account.cash))
     print("Buying power:    ${}".format(account.buying_power))
-
     print("DT count:        {}".format(account.daytrade_count))
     print("DT buying power: ${}".format(account.daytrading_buying_power))
-
-    datafile = None
 
     # Check if our account is restricted from trading.
     if account.trading_blocked:
@@ -55,150 +102,121 @@ def get_stuff_to_trade():
 
     # Filter the assets down to just those on NASDAQ.
     nasdaq_assets = [a for a in active_assets if a.exchange == "NASDAQ"]
-    vol_assets = []
     for i in list(filter(lambda ass: ass.tradable is True, nasdaq_assets)):
 
         symbol = i.symbol
         today = date.fromtimestamp(time.time()).strftime("%Y-%m-%dT09:30:00-04:00")
-        start = date.fromtimestamp(time.time() - 604800).strftime("%Y-%m-%dT09:30:00-04:00")
+        start = date.fromtimestamp(time.time() - (604800 * 52)).strftime("%Y-%m-%dT09:30:00-04:00")
         barset = api.get_barset(symbol, "minute", after=start)
         symbol_bars = barset[symbol]
+        vmean = 0
 
         # Get trading volume
         volume = [bar.v for bar in symbol_bars if bar is not None]
+        if volume is None:
+            continue
 
         # And closing price
         closeprices = [bar.c for bar in symbol_bars if bar is not None]
-        if volume is None or closeprices is None:
+        if closeprices is None:
             continue
 
         else:
-
+            if len(volume) > 0:
+                vmean = mean(volume)
             datafile = os.path.relpath("data/{}_data_{}.csv".format(symbol, time.time()))
             with open(datafile, "w+") as df:
-                df.write("time,open,high,low,close,volume\n")
+                df.write("time,open,high,low,close,volume,vol_avg\n")
                 for b in barset[symbol]:
-                    df.write("{},{},{},{},{},{}\n".format(b.t, b.o, b.c, b.h, b.l, b.v))
+                    df.write("{},{},{},{},{},{},{}\n".format(b.t, b.o, b.c, b.h, b.l, b.v, vmean))
 
         if type(datafile) is str and len(datafile) > 0:
-            return datafile
+            return datafile, symbol
         else:
             raise FileExistsError
 
 
-def calculate_indicators(d_file):
-    if not d_file or d_file is None:
-        raise ValueError("Invalid argument value")
+def calculate_indicators(d_file, ticker):
+    """Calculating simple indicators for a long position. Or short? Haven't fully decided...
 
-    data = None
+    :param d_file:
+    :param ticker:
+    :return:
+    """
+    if not d_file or d_file is None:
+        raise FileNotFoundError("Invalid dataframe file")
+
+    if not ticker or ticker is None:
+        raise ValueError("Invalid ticker value")
+
     try:
-        with open(d_file, "r+") as df:
-            data = df.readlines()
+        data = pd.read_csv(d_file)
     except FileExistsError:
         raise FileExistsError
 
-    print(data)
+    macd_pos_momentum = False
+    macd_signal_pos_momentum = False
+    macd_crossed_over = False
+    mfi_pos_momentum = False
+    mfi_buy_sign = False
 
-    # TODO: https://github.com/peerchemist/finta
-    print(".")
+    is_bullish = data["close"].iloc[-10:].iloc[-1] > data["close"].iloc[-10:].iloc[0]
 
-    # barset = api.get_barset(symbol[0], "15Min", after=start)
-    # asset = api.get_asset(symbol[0])
-    # symbol_bars = barset[symbol[0]]
+    bullish_pattern = bullish_candlestick_patterns(data.iloc[-1], data.iloc[-2], data.iloc[-3])
 
-    # alfavantage = TimeSeries(key=config["alpha_vantage"]["API_KEY"], output_format="pandas")
-    # indicators = TechIndicators(key=config["alpha_vantage"]["API_KEY"], output_format="pandas")
-    #
-    # tradedata = dict()
-    # tradedata["symbol"] = symbol
-    # # Get current ticker price
-    # tradedata["close"] = closeprices[0]
-    # # Get json object with the intraday data and another with  the call's metadata
-    # intraday, i_meta = alfavantage.get_intraday(symbol, interval="1min")
-    # tradedata["intraday"] = intraday['4. close']
-    # # Get the MACD
-    # macd, macd_meta = indicators.get_macd(symbol, interval="1min")
-    # tradedata["macd"] = macd["MACD"]
-    # # Get the RSI
-    # rsi, rsi_meta = indicators.get_rsi(symbol, interval="1min", time_period=100)
-    # tradedata["rsi"] = rsi["RSI"]
-    # # Get the RoC
-    # roc, roc_meta = indicators.get_roc(symbol, interval="1min", time_period=100)
-    # tradedata["roc"] = roc["ROC"]
-    # # Get stochastic oscillator
-    # stoc, stoc_meta = indicators.get_stoch(symbol, interval="1min")
-    # tradedata["stoc"] = stoc
-    # # And finally, calculate the limit
-    # limit_price = closeprices[0] - closeprices[0] * .1
-    # tradedata["limit"] = limit_price
-    #
-    # if len(volume) > 0:
-    #     vmean = mean(volume)
-    #     tradedata["vmean"] = vmean
-    #     vol_assets.append(tradedata)
-    #     # vol_assets.append((symbol, vmean, closeprices))
-    #
-    # if len(vol_assets) > 3:
-    #     break
-    #
-    # return vol_assets
+    macd = TA.MACD(data)
 
+    # get macd buy sign
+    if macd.iloc[-1]["MACD"] > macd.iloc[-1]["SIGNAL"]:
+        macd_crossed_over = True
 
-def find_best_security(asset_list):
+    _macds = macd.iloc[-10:]["MACD"]
+    _signals = macd.iloc[-10:]["SIGNAL"]
 
-    symbol = sorted(asset_list, key=lambda ass: ass["vmean"], reverse=True)[0]
-    print("Symbol: ", symbol)
+    macd_pos_momentum = _macds.iloc[-1] > _macds.iloc[0]
+    macd_signal_pos_momentum = _signals.iloc[-1] > _signals.iloc[0]
 
-    # https://www.lazyfa.com/
+    # get money flow index buy sign
+    mfi = TA.MFI(data)
+
+    if mfi.iloc[-1] <= 20:
+        mfi_buy_sign = True
+
+    _mfis = mfi.tail(10)
+
+    mfi_pos_momentum = _mfis.iloc[-1] > _mfis.iloc[0]
+
+    td = dict()
+    td["ticker"] = ticker
+    td["raw_data"] = data
+    td["raw_macd"] = _macds
+    td["raw_signal"] = _signals
+    td["raw_mfi"] = mfi.iloc[-10:]
+    td["bullish_pattern"] = bullish_pattern
+    td["macd_crossed_over"] = macd_crossed_over
+    td["macd_pos_momentum"] = macd_pos_momentum
+    td["macd_signal_pos_momentum"] = macd_signal_pos_momentum
+    td["mfi_pos_momentum"] = mfi_pos_momentum
+    td["mfi_buy_sign"] = mfi_buy_sign
+
+    if td and len(td.keys()) > 0:
+        return td
+    else:
+        raise ValueError
 
 
-
-    # TODO: Figure out what else I need to do with the data before trading it
-
-    # Also, might want a better tech indicator lib that won't throttle me
-    # https://www.worldtradingdata.com/pricing
-    # https://daytradingz.com/trade-ideas/
-    # https://daytradingz.com/gap-and-go-strategy/
-    # https://daytradingz.com/low-float-stocks/
-    # https://iextrading.com/developer/
+def get_sentiment():
+    # https://www.youtube.com/watch?v=EblHYC4EB_s&list=WL&index=3&frags=wn
+    raise NotImplementedError("Working on it")
 
 
+def main():
 
-
-
-    # barset = api.get_barset(symbol[0], "15Min", after="2019-09-12T07:00:00-04:00")
-    # asset = api.get_asset(symbol[0])
-    # symbol_bars = barset[symbol[0]]
-
-    # alfavantage = TimeSeries(key=config["alpha_vantage"]["API_KEY"], output_format="pandas")
-    # indicators = TechIndicators(key=config["alpha_vantage"]["API_KEY"], output_format="pandas")
-
-    # tradedata = dict()
-    # tradedata["symbol"] = symbol[0]
-    # # Get current ticker price
-    # tradedata["close"] = symbol[2][0]
-    # # Get json object with the intraday data and another with  the call's metadata
-    # intraday, i_meta = alfavantage.get_intraday(symbol[0], interval="1min")
-    # tradedata["intraday"] = intraday['4. close']
-    # # Get the MACD
-    # macd, macd_meta = indicators.get_macd(symbol[0], interval="1min")
-    # tradedata["macd"] = macd["MACD"]
-    # # Get the RSI
-    # rsi, rsi_meta = indicators.get_rsi(symbol[0], interval="1min", time_period=100)
-    # tradedata["rsi"] = rsi["RSI"]
-    # # Get the RoC
-    # roc, roc_meta = indicators.get_roc(symbol[0], interval="1min", time_period=100)
-    # tradedata["roc"] = roc["ROC"]
-    # # Get stochastic oscillator
-    # stoc, stoc_meta = indicators.get_stoch(symbol[0], interval="1min")
-    # tradedata["stoc"] = stoc
-    # # And finally, calculate the limit
-    # limit_price = symbol[2][0] - symbol[2][0] * .1
-    # tradedata["limit"] = limit_price
-
-    return symbol
+    # raw_data, ticker = get_stuff_to_trade()
+    raw_data = os.path.relpath("data\\VRSK_data_1568981547.3181224.csv")
+    ticker = "VRSK"
+    indicators = calculate_indicators(raw_data, ticker)
 
 
 if __name__ == "__main__":
-    raw_data = get_stuff_to_trade()
-    indicators = calculate_indicators(raw_data)
+    main()
