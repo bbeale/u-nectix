@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 from statistics import mean
 from datetime import date, timedelta
-from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.sectorperformance import SectorPerformances
-from alpha_vantage.techindicators import TechIndicators
 from finta import TA
 import alpaca_trade_api as tradeapi
+import twitter
+import spacy
+import nltk
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,6 +15,7 @@ import pprint
 import sys
 import time
 import os
+
 
 config = configparser.ConfigParser()
 
@@ -32,6 +33,12 @@ api = tradeapi.REST(
     secret_key  = config["alpaca"]["APCA_API_SECRET_KEY"],
     api_version = config["alpaca"]["VERSION"]
 )
+
+
+def time_formatter(time_stamp):
+    if not time_stamp or time_stamp is None or type(time_stamp) is not int:
+        raise ValueError
+    return date.fromtimestamp(time_stamp).strftime("%Y-%m-%dT09:30:00-04:00")
 
 
 def bullish_candlestick_patterns(c1, c2, c3):
@@ -105,8 +112,9 @@ def get_stuff_to_trade():
     for i in list(filter(lambda ass: ass.tradable is True, nasdaq_assets)):
 
         symbol = i.symbol
-        today = date.fromtimestamp(time.time()).strftime("%Y-%m-%dT09:30:00-04:00")
-        start = date.fromtimestamp(time.time() - (604800 * 52)).strftime("%Y-%m-%dT09:30:00-04:00")
+        today = time_formatter(time.time())
+        start = time_formatter(time.time() - (604800 * 52))
+
         barset = api.get_barset(symbol, "minute", after=start)
         symbol_bars = barset[symbol]
         vmean = 0
@@ -151,8 +159,8 @@ def calculate_indicators(d_file, ticker):
 
     try:
         data = pd.read_csv(d_file)
-    except FileExistsError:
-        raise FileExistsError
+    except OSError:
+        raise OSError
 
     macd_pos_momentum = False
     macd_signal_pos_momentum = False
@@ -205,9 +213,18 @@ def calculate_indicators(d_file, ticker):
         raise ValueError
 
 
-def get_sentiment():
+def get_sentiment(ticker):
     # https://www.youtube.com/watch?v=EblHYC4EB_s&list=WL&index=3&frags=wn
-    raise NotImplementedError("Working on it")
+    t_api = twitter.Api(config["twitter"]["CONSUMER_KEY"], config["twitter"]["CONSUMER_SECRET"], config["twitter"]["ACCESS_TOKEN_KEY"], config["twitter"]["ACCESS_TOKEN_SECRET"])
+
+    results = t_api.GetSearch("{} stock".format(ticker), result_type="recent")
+
+    result_dicts = [dict(created_at=time_formatter(result.created_at_in_seconds), user=result.user.name, text=result.text) for result in results if "RT" not in result.text]
+
+    texts = [res["text"] for res in result_dicts]
+    text = "\n\n".join(texts)
+
+    print(".")      # TODO: finish
 
 
 def main():
@@ -216,6 +233,7 @@ def main():
     raw_data = os.path.relpath("data\\VRSK_data_1568981547.3181224.csv")
     ticker = "VRSK"
     indicators = calculate_indicators(raw_data, ticker)
+    get_sentiment(ticker)
 
 
 if __name__ == "__main__":
