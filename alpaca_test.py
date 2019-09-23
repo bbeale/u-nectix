@@ -49,6 +49,10 @@ def time_formatter(time_stamp, time_format=None):
     return date.fromtimestamp(time_stamp).strftime(time_format)
 
 
+def bullish_sequence(num1, num2, num3, num4, num5):
+    return num1 >= num2 >= num3 >= num4 >= num5
+
+
 def bullish_candlestick_patterns(c1, c2, c3):
     """Pilfered from Alpaca Slack channel
 
@@ -92,6 +96,19 @@ def bullish_candlestick_patterns(c1, c2, c3):
     return pattern
 
 
+def write_barset_to_file(barset, ticker):
+        datafile = os.path.relpath("data/{}_data_{}.csv".format(ticker, time.time()))
+        with open(datafile, "w+") as df:
+            df.write("time,open,high,low,close,volume,vol_avg,,is_bullish,macd,signal,macd_buy_sign,macd_pos_momentum,mfi,mfi_buy_sign,mfi_pos_momentum,stoch,stoch_buy_sign,stoch_pos_momentum,sentiment\n")
+            for b in barset:
+                df.write("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n".format(b.t, b.o, b.c, b.h, b.l, b.v, 0,0,0,0,0,0,0,0,0,0,0,0,0))
+
+        if type(datafile) is str and len(datafile) > 0:
+            return datafile, ticker
+        else:
+            raise FileExistsError
+
+
 def get_stuff_to_trade():
     """ Loops through all securities with volume data, grabs the best ones for trading according to the indicators
 
@@ -116,15 +133,16 @@ def get_stuff_to_trade():
     active_assets = api.list_assets(status="active")
 
     # Filter the assets down to just those on NASDAQ.
-    nasdaq_assets = [a for a in active_assets if a.exchange == "NASDAQ"]
-    for i in list(filter(lambda ass: ass.tradable is True, nasdaq_assets)):
+    assets = [a for a in active_assets if a.exchange == "NASDAQ" and a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
+    assets_to_compare = {}
+    for i in list(filter(lambda ass: ass.tradable is True, assets)):
 
         symbol = i.symbol
         today = time_formatter(time.time())
-        start = time_formatter(time.time() - (604800 * 52))
+        start = time_formatter(time.time() - (604800 * 2))
 
-        # barset = api.get_barset(symbol, "minute", after=start)
-        barset = api.get_barset("VRSK", "15Min", after=start)
+        barset = api.get_barset(symbol, "1Min", after=start)
+        # barset = api.get_barset("VRSK", "15Min", after=start)
         symbol_bars = barset[symbol]
         vmean = 0
 
@@ -138,14 +156,13 @@ def get_stuff_to_trade():
         if closeprices is None:
             continue
 
-        else:
-            if len(volume) > 0:
-                vmean = mean(volume)
-            datafile = os.path.relpath("data/{}_data_{}.csv".format(symbol, time.time()))
-            with open(datafile, "w+") as df:
-                df.write("time,open,high,low,close,volume,vol_avg\n")
-                for b in barset[symbol]:
-                    df.write("{},{},{},{},{},{},{}\n".format(b.t, b.o, b.c, b.h, b.l, b.v, vmean))
+        if len(volume) > 0:
+            vmean = mean(volume)
+        datafile = os.path.relpath("data/{}_data_{}.csv".format(symbol, time.time()))
+        with open(datafile, "w+") as df:
+            df.write("time,open,high,low,close,volume,vol_avg\n")
+            for b in barset[symbol]:
+                df.write("{},{},{},{},{},{},{}\n".format(b.t, b.o, b.c, b.h, b.l, b.v, vmean))
 
         if type(datafile) is str and len(datafile) > 0:
             return datafile, symbol
@@ -171,7 +188,15 @@ def calculate_indicators(d_file, ticker):
     except OSError:
         raise OSError
 
-    is_bullish = data["close"].iloc[-1] >= data["close"].iloc[-2] >= data["close"].iloc[-3]
+    print(data["close"].iloc[-1], data["close"].iloc[-2], data["close"].iloc[-3])
+    is_bullish = bullish_sequence(
+        data["close"].iloc[-1],
+        data["close"].iloc[-2],
+        data["close"].iloc[-3],
+        data["close"].iloc[-4],
+        data["close"].iloc[-5]
+    )
+    ix = int(len(data) / 4)
     bullish_pattern = bullish_candlestick_patterns(data.iloc[-1], data.iloc[-2], data.iloc[-3])
 
     macd_buy_sign = False
@@ -186,11 +211,24 @@ def calculate_indicators(d_file, ticker):
     if macd.iloc[-1]["MACD"] > macd.iloc[-1]["SIGNAL"]:
         macd_buy_sign = True
 
-    macd_10day_mean = macd.iloc[-5845:]["MACD"].mean()
-    signal_10day_mean = macd.iloc[-5845:]["SIGNAL"].mean()
+    macd_10day_mean = macd.iloc[-ix:]["MACD"].mean()
+    signal_10day_mean = macd.iloc[-ix:]["SIGNAL"].mean()
 
-    macd_pos_momentum = _macds.iloc[-1] > _macds.iloc[-2] > _macds.iloc[-3]
-    macd_signal_pos_momentum = _signals.iloc[-1] >= _signals.iloc[-2] >= _signals.iloc[-3]
+    macd_pos_momentum = bullish_sequence(
+        _macds.iloc[-1],
+        _macds.iloc[-2],
+        _macds.iloc[-3],
+        _macds.iloc[-4],
+        _macds.iloc[-5]
+    )
+
+    macd_signal_pos_momentum = bullish_sequence(
+        _signals.iloc[-1],
+        _signals.iloc[-2],
+        _signals.iloc[-3],
+        _signals.iloc[-4],
+        _signals.iloc[-5]
+    )
 
     # get money flow index
     mfi = TA.MFI(data)
@@ -198,7 +236,7 @@ def calculate_indicators(d_file, ticker):
     if mfi.iloc[-1] <= 20:
         mfi_buy_sign = True
 
-    mfi_10day_mean = mfi.iloc[-5845:].mean()
+    mfi_10day_mean = mfi.iloc[-ix:].mean()
 
     mfi_pos_momentum = mfi.iloc[-1] >= mfi.iloc[-2] >= mfi.iloc[-3]
 
@@ -208,7 +246,7 @@ def calculate_indicators(d_file, ticker):
     if stoch.iloc[-1] <= 20:
         stoch_buy_sign = True
 
-    stoch_10day_mean = stoch.iloc[-5845:].mean()
+    stoch_10day_mean = stoch.iloc[-ix:].mean()
 
     stoch_pos_momentum = stoch.iloc[-1] >= stoch.iloc[-2] >= stoch.iloc[-3]
 
@@ -259,8 +297,10 @@ def get_sentiment(ticker):
 def main():
 
     # raw_data, ticker = get_stuff_to_trade()
-    # raw_data = os.path.relpath("data\\VRSK_test_data_9-2018-9-2019-1min.csv")     # 1min
-    raw_data = os.path.relpath("data/VRSK_test_data_9-20189-9-2019-15min.csv")     # 15min
+    # raw_data = os.path.relpath("data\\VRSK_test_data_9-2018-9-2019-1min.csv")         # 1min
+    # raw_data = os.path.relpath("data/VRSK_test_data_9-20189-9-2019-15min.csv")        # 15min
+    # raw_data = os.path.relpath("data/VRSK_test_data_fast.csv")                        # fast window
+    raw_data = os.path.relpath("data/VRSK_test_data_short_window_minute_int.csv")       # fast long window
     ticker = "VRSK"
     indicators = calculate_indicators(raw_data, ticker)
     get_sentiment(ticker)
