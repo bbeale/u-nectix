@@ -36,7 +36,7 @@ api = tradeapi.REST(
 
 
 def time_formatter(time_stamp):
-    if not time_stamp or time_stamp is None or type(time_stamp) is not int:
+    if not time_stamp or time_stamp is None or type(time_stamp) is not float:
         raise ValueError
     return date.fromtimestamp(time_stamp).strftime("%Y-%m-%dT09:30:00-04:00")
 
@@ -115,7 +115,8 @@ def get_stuff_to_trade():
         today = time_formatter(time.time())
         start = time_formatter(time.time() - (604800 * 52))
 
-        barset = api.get_barset(symbol, "minute", after=start)
+        # barset = api.get_barset(symbol, "minute", after=start)
+        barset = api.get_barset("VRSK", "15Min", after=start)
         symbol_bars = barset[symbol]
         vmean = 0
 
@@ -162,50 +163,70 @@ def calculate_indicators(d_file, ticker):
     except OSError:
         raise OSError
 
-    macd_pos_momentum = False
-    macd_signal_pos_momentum = False
-    macd_crossed_over = False
-    mfi_pos_momentum = False
-    mfi_buy_sign = False
-
-    is_bullish = data["close"].iloc[-10:].iloc[-1] > data["close"].iloc[-10:].iloc[0]
-
+    is_bullish = data["close"].iloc[-1] >= data["close"].iloc[-2] >= data["close"].iloc[-3]
     bullish_pattern = bullish_candlestick_patterns(data.iloc[-1], data.iloc[-2], data.iloc[-3])
 
+    macd_buy_sign = False
+    mfi_buy_sign = False
+    stoch_buy_sign = False
+
+    # get MACD
     macd = TA.MACD(data)
+    _macds = macd["MACD"]
+    _signals = macd["SIGNAL"]
 
-    # get macd buy sign
     if macd.iloc[-1]["MACD"] > macd.iloc[-1]["SIGNAL"]:
-        macd_crossed_over = True
+        macd_buy_sign = True
 
-    _macds = macd.iloc[-10:]["MACD"]
-    _signals = macd.iloc[-10:]["SIGNAL"]
+    macd_10day_mean = macd.iloc[-5845:]["MACD"].mean()
+    signal_10day_mean = macd.iloc[-5845:]["SIGNAL"].mean()
 
-    macd_pos_momentum = _macds.iloc[-1] > _macds.iloc[0]
-    macd_signal_pos_momentum = _signals.iloc[-1] > _signals.iloc[0]
+    macd_pos_momentum = _macds.iloc[-1] > _macds.iloc[-2] > _macds.iloc[-3]
+    macd_signal_pos_momentum = _signals.iloc[-1] >= _signals.iloc[-2] >= _signals.iloc[-3]
 
-    # get money flow index buy sign
+    # get money flow index
     mfi = TA.MFI(data)
 
     if mfi.iloc[-1] <= 20:
         mfi_buy_sign = True
 
-    _mfis = mfi.tail(10)
+    mfi_10day_mean = mfi.iloc[-5845:].mean()
 
-    mfi_pos_momentum = _mfis.iloc[-1] > _mfis.iloc[0]
+    mfi_pos_momentum = mfi.iloc[-1] >= mfi.iloc[-2] >= mfi.iloc[-3]
+
+    # get stochastic oscillator
+    stoch = TA.STOCH(data)
+
+    if stoch.iloc[-1] <= 20:
+        stoch_buy_sign = True
+
+    stoch_10day_mean = stoch.iloc[-5845:].mean()
+
+    stoch_pos_momentum = stoch.iloc[-1] >= stoch.iloc[-2] >= stoch.iloc[-3]
 
     td = dict()
     td["ticker"] = ticker
-    td["raw_data"] = data
-    td["raw_macd"] = _macds
-    td["raw_signal"] = _signals
-    td["raw_mfi"] = mfi.iloc[-10:]
+    td["is_bullish"] = is_bullish
     td["bullish_pattern"] = bullish_pattern
-    td["macd_crossed_over"] = macd_crossed_over
+    # macd results
+    td["data"] = data
+    td["macd"] = _macds
+    td["signal"] = _signals
+    td["macd_buy_sign"] = macd_buy_sign
+    td["macd_10day_mean"] = macd_10day_mean
+    td["signal_10day_mean"] = signal_10day_mean
     td["macd_pos_momentum"] = macd_pos_momentum
     td["macd_signal_pos_momentum"] = macd_signal_pos_momentum
-    td["mfi_pos_momentum"] = mfi_pos_momentum
+    # mfi results
+    td["mfi"] = mfi
     td["mfi_buy_sign"] = mfi_buy_sign
+    td["mfi_10day_mean"] = mfi_10day_mean
+    td["mfi_pos_momentum"] = mfi_pos_momentum
+    # stoch results
+    td["stoch"] = stoch
+    td["stoch_buy_sign"] = stoch_buy_sign
+    td["stoch_10day_mean"] = stoch_10day_mean
+    td["stoch_pos_momentum"] = stoch_pos_momentum
 
     if td and len(td.keys()) > 0:
         return td
@@ -219,7 +240,7 @@ def get_sentiment(ticker):
 
     results = t_api.GetSearch("{} stock".format(ticker), result_type="recent")
 
-    result_dicts = [dict(created_at=time_formatter(result.created_at_in_seconds), user=result.user.name, text=result.text) for result in results if "RT" not in result.text]
+    result_dicts = [dict(created_at=time_formatter(float(result.created_at_in_seconds)), user=result.user.name, text=result.text) for result in results if "RT" not in result.text]
 
     texts = [res["text"] for res in result_dicts]
     text = "\n\n".join(texts)
@@ -230,9 +251,10 @@ def get_sentiment(ticker):
 def main():
 
     # raw_data, ticker = get_stuff_to_trade()
-    raw_data = os.path.relpath("data\\VRSK_data_1568981547.3181224.csv")
+    # raw_data = os.path.relpath("data\\VRSK_test_data_9-2018-9-2019-1min.csv")     # 1min
+    raw_data = os.path.relpath("data\\VRSK_test_data_9-20189-9-2019-15min.csv")     # 15min
     ticker = "VRSK"
-    indicators = calculate_indicators(raw_data, ticker)
+    # indicators = calculate_indicators(raw_data, ticker)
     get_sentiment(ticker)
 
 
