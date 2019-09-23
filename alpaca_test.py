@@ -35,10 +35,18 @@ api = tradeapi.REST(
 )
 
 
-def time_formatter(time_stamp):
+def time_formatter(time_stamp, time_format=None):
+    """Return a formatted date in open market hours given a timestamp.
+
+    :param time_stamp:
+    :param time_format:
+    :return:
+    """
     if not time_stamp or time_stamp is None or type(time_stamp) is not float:
         raise ValueError
-    return date.fromtimestamp(time_stamp).strftime("%Y-%m-%dT09:30:00-04:00")
+    if time_format is None:
+        time_format = "%Y-%m-%dT09:30:00-04:00"
+    return date.fromtimestamp(time_stamp).strftime(time_format)
 
 
 def bullish_candlestick_patterns(c1, c2, c3):
@@ -252,9 +260,9 @@ def main():
 
     # raw_data, ticker = get_stuff_to_trade()
     # raw_data = os.path.relpath("data\\VRSK_test_data_9-2018-9-2019-1min.csv")     # 1min
-    raw_data = os.path.relpath("data\\VRSK_test_data_9-20189-9-2019-15min.csv")     # 15min
+    raw_data = os.path.relpath("data/VRSK_test_data_9-20189-9-2019-15min.csv")     # 15min
     ticker = "VRSK"
-    # indicators = calculate_indicators(raw_data, ticker)
+    indicators = calculate_indicators(raw_data, ticker)
     get_sentiment(ticker)
 
 
