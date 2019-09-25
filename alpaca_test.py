@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from statistics import mean
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from datetime import date, timedelta
+from statistics import mean
+from scipy import spatial
 from finta import TA
 import alpaca_trade_api as tradeapi
 import twitter
@@ -33,6 +35,10 @@ api = tradeapi.REST(
     secret_key  = config["alpaca"]["APCA_API_SECRET_KEY"],
     api_version = config["alpaca"]["VERSION"]
 )
+
+nlp = spacy.load("en_core_web_lg")
+nltk.download('vader_lexicon')
+sid = SentimentIntensityAnalyzer()
 
 
 def time_formatter(time_stamp, time_format=None):
@@ -280,8 +286,8 @@ def calculate_indicators(d_file, ticker):
         raise ValueError
 
 
-def get_sentiment(ticker):
-    # https://www.youtube.com/watch?v=EblHYC4EB_s&list=WL&index=3&frags=wn
+def get_sentiment(ticker, dataframe):
+
     t_api = twitter.Api(config["twitter"]["CONSUMER_KEY"], config["twitter"]["CONSUMER_SECRET"], config["twitter"]["ACCESS_TOKEN_KEY"], config["twitter"]["ACCESS_TOKEN_SECRET"])
 
     results = t_api.GetSearch("{} stock".format(ticker), result_type="recent")
@@ -291,7 +297,21 @@ def get_sentiment(ticker):
     texts = [res["text"] for res in result_dicts]
     text = "\n\n".join(texts)
 
-    print(".")      # TODO: finish
+    text_polarity = sid.polarity_scores(text)
+
+    if text_polarity["compound"] > 0:
+        sentiment = "positive"
+
+    else:
+        sentiment = "negative"
+
+    if "text_polarity" not in dataframe.keys() or dataframe["text_polarity"] is None:
+        dataframe["text_polarity"] = text_polarity
+
+    if "sentiment" not in dataframe.keys() or dataframe["sentiment"] is None:
+        dataframe["sentiment"] = sentiment
+
+    return dataframe
 
 
 def main():
@@ -303,7 +323,8 @@ def main():
     raw_data = os.path.relpath("data/VRSK_test_data_short_window_minute_int.csv")       # fast long window
     ticker = "VRSK"
     indicators = calculate_indicators(raw_data, ticker)
-    get_sentiment(ticker)
+    get_sentiment(ticker, indicators)
+    print(".")
 
 
 if __name__ == "__main__":
