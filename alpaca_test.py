@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from statistics import mean
 from scipy import spatial
 from finta import TA
+from edgar import compress_filings
 import alpaca_trade_api as tradeapi
 import twitter
 import spacy
@@ -13,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import configparser
+import requests
 import pprint
 import sys
 import time
@@ -314,6 +316,41 @@ def get_sentiment(ticker, dataframe):
     return dataframe
 
 
+def get_edgar_score(ticker, dataframe):
+
+    TOKEN = config["edgar"]["TOKEN"]
+
+    # API endpoint
+    BASE_URL = config["edgar"]["URL"]
+
+    API = "{}?token={}".format(BASE_URL, TOKEN)
+
+    filter_8k = "formType:(\"10\") AND filedAt:[2019-08-01 TO 2019-09-02]"
+    sort = [{"filedAt": {"order": "desc"}}]
+    start = 0
+    size = 100
+
+    payload = {
+        "query": {"query_string": {"query": filter_8k}},
+        "from": start,
+        "size": size,
+        "sort": sort
+    }
+
+    resp = requests.post(API, payload).text
+
+    edgar = None
+
+    if "edgar" not in dataframe.keys() or dataframe["edgar"] is None:
+        dataframe["edgar"] = edgar
+
+    return dataframe
+
+
+def risk_management():
+    raise NotImplementedError
+
+
 def main():
 
     # raw_data, ticker = get_stuff_to_trade()
@@ -324,6 +361,7 @@ def main():
     ticker = "VRSK"
     indicators = calculate_indicators(raw_data, ticker)
     get_sentiment(ticker, indicators)
+    get_edgar_score(ticker, indicators)
     print(".")
 
 
