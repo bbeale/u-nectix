@@ -110,7 +110,6 @@ def compress_filings(filings):
 # %%
 
 filings = compress_filings(filingsJson['filings'])
-filings
 
 # %%
 
@@ -122,23 +121,24 @@ import time
 # Download the XML version of the filing. If it fails wait for 5, 10, 15, ... seconds and try again.
 def download_xml(url, tries=1):
     try:
-        response = urllib.request.urlopen(url)
+        response = requests.get(url)        # urllib.request.urlopen(url)
     except:
         print('Something went wrong. Wait for 5 seconds and try again.', tries)
         if tries < 5:
             time.sleep(5 * tries)
             download_xml(url, tries + 1)
     else:
+        print("Document URL:\t", url)
+
         # decode the response into a string
-        data = response.read().decode('utf-8')
+        data = response.text
         # set up the regular expression extractoer in order to get the relevant part of the filing
         matcher = re.compile('<\?xml.*ownershipDocument>', flags=re.MULTILINE | re.DOTALL)
         matches = matcher.search(data)
         # the first matching group is the extracted XML of interest
-        xml = matches.group(0)
+        doc = matches.group(0)
         # instantiate the XML object
-        root = ET.fromstring(xml)
-        print(url)
+        root = ET.fromstring(doc)
         return root
 
 
@@ -172,11 +172,11 @@ def calculate_transaction_amount(xml):
 
 # %%
 
+
 # Test the calc function by using just one filing
 url = 'https://www.sec.gov/Archives/edgar/data/1592176/0000706688-19-000155.txt'
 xml = download_xml(url)
 amount = calculate_transaction_amount(xml)
-amount
 
 # %%
 
