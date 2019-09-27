@@ -35,60 +35,60 @@ except FileExistsError as e:
 # %%
 
 # API Key
-TOKEN = config["edgar"]["TOKEN"]
-# API endpoint
-BASE_URL = config["edgar"]["URL"]
-API = "{}?token={}".format(BASE_URL, TOKEN)
-
-# Define the filter parameters
-filter = "formType:\"8-k\" AND formType:(NOT \"N-4\") AND formType:(NOT \"4/A\") AND filedAt:[2019-08-01 TO " \
-         "2019-09-02]"
-# Start with the first filing. Increase it when paginating.
-# Set to 10000 if you want to fetch the next batch of filings. Set to 20000 for the next and so on.
-start = 0
-# Return 10,000 filings per API call
-size = 10000
-# Sort in descending order by filedAt
-sort = [{"filedAt": {"order": "desc"}}]
-
-payload = {
-    "query": {"query_string": {"query": filter}},
-    "from": start,
-    "size": size,
-    "sort": sort
-}
-
-# Format your payload to JSON bytes
-jsondata = json.dumps(payload)
-jsondataasbytes = jsondata.encode('utf-8')  # needs to be bytes
-
-# Instantiate the request
-req = urllib.request.Request(API)
-
-# Set the correct HTTP header: Content-Type = application/json
-req.add_header('Content-Type', 'application/json; charset=utf-8')
-# Set the correct length of your request
-req.add_header('Content-Length', len(jsondataasbytes))
-
-# Send the request to the API
-response = urllib.request.urlopen(req, jsondataasbytes)
-
-# Read the response
-res_body = response.read()
-# Transform the response into JSON
-filingsJson = json.loads(res_body.decode("utf-8"))
-
-# %%
-
-# Print the response. Most likely this will throw an error because we fetched a
-# large amount of data (10,000 filings). Reduce the number of filings and you will see a result here.
-print(json.dumps(filingsJson, indent=2))
-
-# %%
-
-# Show us how many filings matched our filter criteria.
-# This number is most likely different from the number of filings returned by the API.
-print(filingsJson['total'])
+# TOKEN = config["edgar"]["TOKEN"]
+# # API endpoint
+# BASE_URL = config["edgar"]["URL"]
+# API = "{}?token={}".format(BASE_URL, TOKEN)
+#
+# # Define the filter parameters
+# filter = "formType:\"8-k\" AND formType:(NOT \"N-4\") AND formType:(NOT \"4/A\") AND filedAt:[2019-08-01 TO " \
+#          "2019-09-02]"
+# # Start with the first filing. Increase it when paginating.
+# # Set to 10000 if you want to fetch the next batch of filings. Set to 20000 for the next and so on.
+# start = 0
+# # Return 10,000 filings per API call
+# size = 10000
+# # Sort in descending order by filedAt
+# sort = [{"filedAt": {"order": "desc"}}]
+#
+# payload = {
+#     "query": {"query_string": {"query": filter}},
+#     "from": start,
+#     "size": size,
+#     "sort": sort
+# }
+#
+# # Format your payload to JSON bytes
+# jsondata = json.dumps(payload)
+# jsondataasbytes = jsondata.encode('utf-8')  # needs to be bytes
+#
+# # Instantiate the request
+# req = urllib.request.Request(API)
+#
+# # Set the correct HTTP header: Content-Type = application/json
+# req.add_header('Content-Type', 'application/json; charset=utf-8')
+# # Set the correct length of your request
+# req.add_header('Content-Length', len(jsondataasbytes))
+#
+# # Send the request to the API
+# response = urllib.request.urlopen(req, jsondataasbytes)
+#
+# # Read the response
+# res_body = response.read()
+# # Transform the response into JSON
+# filingsJson = json.loads(res_body.decode("utf-8"))
+#
+# # %%
+#
+# # Print the response. Most likely this will throw an error because we fetched a
+# # large amount of data (10,000 filings). Reduce the number of filings and you will see a result here.
+# print(json.dumps(filingsJson, indent=2))
+#
+# # %%
+#
+# # Show us how many filings matched our filter criteria.
+# # This number is most likely different from the number of filings returned by the API.
+# print(filingsJson['total'])
 
 # %%
 
@@ -109,7 +109,7 @@ def compress_filings(filings):
 
 # %%
 
-filings = compress_filings(filingsJson['filings'])
+# filings = compress_filings(filingsJson['filings'])
 
 # %%
 
@@ -136,9 +136,9 @@ def download_xml(url, tries=1):
         matcher = re.compile('<\?xml.*ownershipDocument>', flags=re.MULTILINE | re.DOTALL)
         matches = matcher.search(data)
         # the first matching group is the extracted XML of interest
-        doc = matches.group(0)
+        doc = matches.group(0) if matches is not None else None
         # instantiate the XML object
-        root = ET.fromstring(doc)
+        root = ET.fromstring(doc) if doc is not None else None
         return root
 
 
@@ -174,9 +174,9 @@ def calculate_transaction_amount(xml):
 
 
 # Test the calc function by using just one filing
-url = 'https://www.sec.gov/Archives/edgar/data/1592176/0000706688-19-000155.txt'
-xml = download_xml(url)
-amount = calculate_transaction_amount(xml)
+# url = 'https://www.sec.gov/Archives/edgar/data/1592176/0000706688-19-000155.txt'
+# xml = download_xml(url)
+# amount = calculate_transaction_amount(xml)
 
 # %%
 
@@ -184,7 +184,7 @@ amount = calculate_transaction_amount(xml)
 # Download the XML for each filing
 # Calculate the total transaction amount per filing
 # Save the calculate transaction value to the filing dict with key 'nonDerivativeTransactions'
-def add_non_derivative_transaction_amounts():
+def add_non_derivative_transaction_amounts(filings):
     for filing in filings:
         url = filing['linkToTxt']
         xml = download_xml(url)
@@ -199,14 +199,14 @@ def add_non_derivative_transaction_amounts():
 
 # %%
 
-docs = []
-for filing in filings:
-    url = filing['linkToHtml']
-    r = requests.get(url).text
-    docs.append(r)
-
-for doc in docs:
-    soup = BeautifulSoup(doc, 'html.parser')
-    paras = soup.find_all("p")
-    for p in paras:
-        print("P: ", p.text)
+# docs = []
+# for filing in filings:
+#     url = filing['linkToHtml']
+#     r = requests.get(url).text
+#     docs.append(r)
+#
+# for doc in docs:
+#     soup = BeautifulSoup(doc, 'html.parser')
+#     paras = soup.find_all("p")
+#     for p in paras:
+#         print("P: ", p.text)

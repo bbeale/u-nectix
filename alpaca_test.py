@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from statistics import mean
 from scipy import spatial
 from finta import TA
-from edgar import compress_filings
+from edgar import calculate_transaction_amount, download_xml
 import alpaca_trade_api as tradeapi
 import twitter
 import spacy
@@ -19,6 +19,7 @@ import pprint
 import sys
 import time
 import os
+import json
 
 
 config = configparser.ConfigParser()
@@ -325,7 +326,7 @@ def get_edgar_score(ticker, dataframe):
 
     API = "{}?token={}".format(BASE_URL, TOKEN)
 
-    filter_8k = "formType:(\"10\") AND filedAt:[2019-08-01 TO 2019-09-02]"
+    filter_8k = "formType:(\"8-K\") AND filedAt:[2019-08-01 TO 2019-09-26]"
     sort = [{"filedAt": {"order": "desc"}}]
     start = 0
     size = 100
@@ -338,6 +339,12 @@ def get_edgar_score(ticker, dataframe):
     }
 
     resp = requests.post(API, payload).text
+    r_dict = json.loads(resp)
+    r_text = []
+    for item in r_dict["filings"]:
+        xml = download_xml(item["linkToTxt"])
+        _tmp = calculate_transaction_amount(xml)
+        print(item)
 
     edgar = None
 
