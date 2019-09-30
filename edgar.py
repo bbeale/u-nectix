@@ -1,25 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# %%
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, HashingVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from bs4 import BeautifulSoup
-from spacy import displacy
+import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
+from bs4 import BeautifulSoup
+from statistics import mean
+from spacy import displacy
 import pandas as pd
 import numpy as np
-import matplotlib
-
-import urllib.request
 import configparser
+import matplotlib
 import requests
 import spacy
 import nltk
 import json
+import time
 import sys
 import os
+import re
+
 # %matplotlib inline
 
 nlp = spacy.load("en_core_web_lg")
@@ -31,66 +33,6 @@ try:
 except FileExistsError as e:
     print("File exists error: {}".format(e))
     sys.exit(1)
-
-# %%
-
-# API Key
-# TOKEN = config["edgar"]["TOKEN"]
-# # API endpoint
-# BASE_URL = config["edgar"]["URL"]
-# API = "{}?token={}".format(BASE_URL, TOKEN)
-#
-# # Define the filter parameters
-# filter = "formType:\"8-k\" AND formType:(NOT \"N-4\") AND formType:(NOT \"4/A\") AND filedAt:[2019-08-01 TO " \
-#          "2019-09-02]"
-# # Start with the first filing. Increase it when paginating.
-# # Set to 10000 if you want to fetch the next batch of filings. Set to 20000 for the next and so on.
-# start = 0
-# # Return 10,000 filings per API call
-# size = 10000
-# # Sort in descending order by filedAt
-# sort = [{"filedAt": {"order": "desc"}}]
-#
-# payload = {
-#     "query": {"query_string": {"query": filter}},
-#     "from": start,
-#     "size": size,
-#     "sort": sort
-# }
-#
-# # Format your payload to JSON bytes
-# jsondata = json.dumps(payload)
-# jsondataasbytes = jsondata.encode('utf-8')  # needs to be bytes
-#
-# # Instantiate the request
-# req = urllib.request.Request(API)
-#
-# # Set the correct HTTP header: Content-Type = application/json
-# req.add_header('Content-Type', 'application/json; charset=utf-8')
-# # Set the correct length of your request
-# req.add_header('Content-Length', len(jsondataasbytes))
-#
-# # Send the request to the API
-# response = urllib.request.urlopen(req, jsondataasbytes)
-#
-# # Read the response
-# res_body = response.read()
-# # Transform the response into JSON
-# filingsJson = json.loads(res_body.decode("utf-8"))
-#
-# # %%
-#
-# # Print the response. Most likely this will throw an error because we fetched a
-# # large amount of data (10,000 filings). Reduce the number of filings and you will see a result here.
-# print(json.dumps(filingsJson, indent=2))
-#
-# # %%
-#
-# # Show us how many filings matched our filter criteria.
-# # This number is most likely different from the number of filings returned by the API.
-# print(filingsJson['total'])
-
-# %%
 
 
 def compress_filings(filings):
@@ -107,23 +49,17 @@ def compress_filings(filings):
     return compressed_filings
 
 
-# %%
-
-# filings = compress_filings(filingsJson['filings'])
-
-# %%
-
-import xml.etree.ElementTree as ET
-import re
-import time
-
-
-# Download the XML version of the filing. If it fails wait for 5, 10, 15, ... seconds and try again.
 def download_xml(url, tries=1):
+    """Download the XML version of the filing. If it fails wait for 5, 10, 15, ... seconds and try again.
+
+    :param url:
+    :param tries:
+    :return:
+    """
     try:
         response = requests.get(url)        # urllib.request.urlopen(url)
-    except:
-        print('Something went wrong. Wait for 5 seconds and try again.', tries)
+    except requests.exceptions.HTTPError as httpe:
+        print(httpe, "Something went wrong. Wait for 5 seconds and try again.", tries)
         if tries < 5:
             time.sleep(5 * tries)
             download_xml(url, tries + 1)
@@ -142,11 +78,13 @@ def download_xml(url, tries=1):
         return root
 
 
-# %%
-
-
-# Calculate the total transaction amount in $ of a giving form 4 in XML
 def calculate_transaction_amount(xml):
+    """Calculate the total transaction amount in $ of a giving form 4 in XML.
+
+    # TODO: customize this for 8-K
+    :param xml:
+    :return:
+    """
     total = 0
 
     if xml is None:
@@ -170,43 +108,97 @@ def calculate_transaction_amount(xml):
 
     return round(total, 2)
 
-# %%
+
+def calculate_8k_transaction_amount(xml):
+    """Calculate the total transaction amount in $ of a giving form 8-K in XML.
+
+    :param xml:
+    :return:
+    """
+    total = 0
+
+    if xml is None:
+        return total
+
+    nonDerivativeTransactions = xml.findall("./nonDerivativeTable/nonDerivativeTransaction")
+    percent_traded_series = []
+    tmean = None
+    for t in nonDerivativeTransactions:
+        # D for disposed or A for acquired
+        action = t.find('./transactionAmounts/transactionAcquiredDisposedCode/value').text
+        # number of shares prior to the transaction - initally None
+        pre_shares = None
+        # number of shares disposed/acquired
+        shares = t.find('./transactionAmounts/transactionShares/value').text
+        # shares following the transaction
+        post_shares = t.find('./postTransactionAmounts/sharesOwnedFollowingTransaction/value').text
+        # price
+        priceRaw = t.find('./transactionAmounts/transactionPricePerShare/value')
+        price = 0 if priceRaw is None else priceRaw.text
+        # set prefix to -1 if derivatives were disposed. set prefix to 1 if derivates were acquired.
+        prefix = -1 if action == 'D' else 1
+        pre_shares = float(shares) + float(post_shares)
+        percent_traded = float(pre_shares) * (float(post_shares)/float(pre_shares))  #    float(post_shares) / float(pre_shares)
+        percent_traded_series.append(percent_traded)
+        pdtraded = pd.Series(percent_traded_series)
+        tmean = pdtraded.pct_change()
+    return tmean
 
 
-# Test the calc function by using just one filing
-# url = 'https://www.sec.gov/Archives/edgar/data/1592176/0000706688-19-000155.txt'
-# xml = download_xml(url)
-# amount = calculate_transaction_amount(xml)
-
-# %%
-
-
-# Download the XML for each filing
-# Calculate the total transaction amount per filing
-# Save the calculate transaction value to the filing dict with key 'nonDerivativeTransactions'
 def add_non_derivative_transaction_amounts(filings):
+    """Download the XML for each filing
+
+    Calculate the total transaction amount per filing
+
+    Save the calculate transaction value to the filing dict with key 'nonDerivativeTransactions'
+
+    # TODO: customize this for 8-K
+
+    :param filings:
+    :return:
+    """
+
     for filing in filings:
         url = filing['linkToTxt']
         xml = download_xml(url)
         nonDerivativeTransactions = calculate_transaction_amount(xml)
         filing['nonDerivativeTransactions'] = nonDerivativeTransactions
+    return filings
 
 
-# %%
+def bs_xml_parse(url, tries=1):
+    """Version of download_xml using BeautifulSoup. Clearly naming conventions aren't a thing.
 
-# Let's inspect filings and ensure that the new key 'nonDerivativeTransactions' is set
-# docs: https://sec-api.io/docs#introduction
+    :param url:
+    :param tries:
+    :return:
+    """
+    docs = []
 
-# %%
+    try:
+        response = requests.get(url)
+    except requests.exceptions.HTTPError as httpe:
+        print(httpe, "Something went wrong. Wait for 5 seconds and try again.", tries)
+        if tries < 5:
+            time.sleep(5 * tries)
+            bs_xml_parse(url, tries + 1)
 
-# docs = []
-# for filing in filings:
-#     url = filing['linkToHtml']
-#     r = requests.get(url).text
-#     docs.append(r)
-#
-# for doc in docs:
-#     soup = BeautifulSoup(doc, 'html.parser')
-#     paras = soup.find_all("p")
-#     for p in paras:
-#         print("P: ", p.text)
+    else:
+        doc = response.text
+        soup = BeautifulSoup(doc, 'xml')
+
+        # grab all xml formatted documents
+        filings = soup.find_all("ownershipDocument")
+        for filing in filings:
+            print(type(filing), filing)
+            docs.append({filing["name"].text: filing})
+
+        for doc in docs:
+            # grab relevant tags from ownershipDocument
+            soup = BeautifulSoup(doc, 'xml')
+            issuer = soup.find("issuer")
+            reporting_owner = soup.find("reportingOwner/rptOwnerName")
+            non_derivative_transaction = soup.find_all("nonDerivativeTransaction")
+
+            for ndt in non_derivative_transaction:
+                print("P: ", ndt.text)

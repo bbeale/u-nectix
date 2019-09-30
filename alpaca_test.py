@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from statistics import mean
 from scipy import spatial
 from finta import TA
-from edgar import calculate_transaction_amount, download_xml
+from edgar import calculate_transaction_amount, download_xml, bs_xml_parse, calculate_8k_transaction_amount
 import alpaca_trade_api as tradeapi
 import twitter
 import spacy
@@ -343,7 +343,9 @@ def get_edgar_score(ticker, dataframe):
     r_text = []
     for item in r_dict["filings"]:
         xml = download_xml(item["linkToTxt"])
-        _tmp = calculate_transaction_amount(xml)
+        # xml = bs_xml_parse(item["linkToTxt"])
+        amount = calculate_transaction_amount(xml)
+        percent = calculate_8k_transaction_amount(xml)
         print(item)
 
     edgar = None
