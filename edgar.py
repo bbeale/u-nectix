@@ -120,29 +120,31 @@ def calculate_8k_transaction_amount(xml):
     if xml is None:
         return total
 
-    nonDerivativeTransactions = xml.findall("./nonDerivativeTable/nonDerivativeTransaction")
-    percent_traded_series = []
-    tmean = None
-    for t in nonDerivativeTransactions:
+    # is the owner a 10 percent shareholder?
+    ownerpattern = "./reportingOwner/reportingOwnerRelationship/isTenPercentOwner"
+    owner_holds_10_percent = True if int(xml.find(ownerpattern).text) > 0 else False
+    non_derivative_transactions = xml.findall("./nonDerivativeTable/nonDerivativeTransaction")
+    init_shares = None
+    total_shares = None
+    for t in non_derivative_transactions:
         # D for disposed or A for acquired
         action = t.find('./transactionAmounts/transactionAcquiredDisposedCode/value').text
-        # number of shares prior to the transaction - initally None
-        pre_shares = None
         # number of shares disposed/acquired
         shares = t.find('./transactionAmounts/transactionShares/value').text
         # shares following the transaction
         post_shares = t.find('./postTransactionAmounts/sharesOwnedFollowingTransaction/value').text
-        # price
-        priceRaw = t.find('./transactionAmounts/transactionPricePerShare/value')
-        price = 0 if priceRaw is None else priceRaw.text
-        # set prefix to -1 if derivatives were disposed. set prefix to 1 if derivates were acquired.
-        prefix = -1 if action == 'D' else 1
-        pre_shares = float(shares) + float(post_shares)
-        percent_traded = float(pre_shares) * (float(post_shares)/float(pre_shares))  #    float(post_shares) / float(pre_shares)
-        percent_traded_series.append(percent_traded)
-        pdtraded = pd.Series(percent_traded_series)
-        tmean = pdtraded.pct_change()
-    return tmean
+        # number of shares prior to the transaction - initally None
+        if init_shares is None:
+            init_shares = float(shares) + float(post_shares)
+
+        if total_shares is None:
+            total_shares = init_shares
+
+        else:
+            total_shares -= float(shares)
+
+    percent_traded = (float(total_shares)/float(init_shares))
+    return init_shares, total_shares, percent_traded, owner_holds_10_percent
 
 
 def add_non_derivative_transaction_amounts(filings):

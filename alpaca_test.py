@@ -317,7 +317,7 @@ def get_sentiment(ticker, dataframe):
     return dataframe
 
 
-def get_edgar_score(ticker, dataframe):
+def get_edgar_score(dataframe):
 
     TOKEN = config["edgar"]["TOKEN"]
 
@@ -340,18 +340,38 @@ def get_edgar_score(ticker, dataframe):
 
     resp = requests.post(API, payload).text
     r_dict = json.loads(resp)
-    r_text = []
+    signal = None
+    total_traded = 0
+
     for item in r_dict["filings"]:
         xml = download_xml(item["linkToTxt"])
         # xml = bs_xml_parse(item["linkToTxt"])
         amount = calculate_transaction_amount(xml)
-        percent = calculate_8k_transaction_amount(xml)
-        print(item)
+        total_traded += amount
 
-    edgar = None
+        initial, post, percenttraded, majorshareholder = calculate_8k_transaction_amount(xml)
+
+        print("# pre:\t\t", initial)
+        print("# post:\t\t", post)
+        print("% traded\t\t", percenttraded)
+
+        if majorshareholder and initial > post:
+            signal = "STRONGBEAR"
+
+        elif not majorshareholder and initial > post:
+            signal = "BEAR"
+
+        elif majorshareholder and post > initial:
+            signal = "STRONGBULL"
+
+        elif not majorshareholder and initial > post:
+            signal = "BULL"
+
+        else:
+            return "Unable to generate signal from SEC filings"
 
     if "edgar" not in dataframe.keys() or dataframe["edgar"] is None:
-        dataframe["edgar"] = edgar
+        dataframe["edgar"] = signal
 
     return dataframe
 
@@ -363,14 +383,14 @@ def risk_management():
 def main():
 
     # raw_data, ticker = get_stuff_to_trade()
-    # raw_data = os.path.relpath("data\\VRSK_test_data_9-2018-9-2019-1min.csv")         # 1min
+    raw_data = os.path.relpath("data\\VRSK_test_data_9-2018-9-2019-1min.csv")         # 1min
     # raw_data = os.path.relpath("data/VRSK_test_data_9-20189-9-2019-15min.csv")        # 15min
     # raw_data = os.path.relpath("data/VRSK_test_data_fast.csv")                        # fast window
-    raw_data = os.path.relpath("data/VRSK_test_data_short_window_minute_int.csv")       # fast long window
+    # raw_data = os.path.relpath("data/VRSK_test_data_short_window_minute_int.csv")       # fast long window
     ticker = "VRSK"
     indicators = calculate_indicators(raw_data, ticker)
     get_sentiment(ticker, indicators)
-    get_edgar_score(ticker, indicators)
+    get_edgar_score(indicators)
     print(".")
 
 

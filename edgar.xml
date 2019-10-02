@@ -5,31 +5,33 @@
 <notSubjectToSection16>0</notSubjectToSection16>
 
 <issuer>
-<issuerCik>0000914025</issuerCik>
-<issuerName>PLANTRONICS INC /CA/</issuerName>
-<issuerTradingSymbol>PLT</issuerTradingSymbol>
+    <issuerCik>0000914025</issuerCik>
+    <issuerName>PLANTRONICS INC /CA/</issuerName>
+    <issuerTradingSymbol>PLT</issuerTradingSymbol>
 </issuer>
 
 <reportingOwner>
-<reportingOwnerId>
-<rptOwnerCik>0001184940</rptOwnerCik>
-<rptOwnerName>KANNAPPAN S KENNETH</rptOwnerName>
-</reportingOwnerId>
-<reportingOwnerAddress>
-<rptOwnerStreet1>345 ENCINAL STREET</rptOwnerStreet1>
-<rptOwnerStreet2/>
-<rptOwnerCity>SANTA CRUZ</rptOwnerCity>
-<rptOwnerState>CA</rptOwnerState>
-<rptOwnerZipCode>95060</rptOwnerZipCode>
-<rptOwnerStateDescription/>
-</reportingOwnerAddress>
-<reportingOwnerRelationship>
-<isDirector>1</isDirector>
-<isOfficer>1</isOfficer>
-<isTenPercentOwner>0</isTenPercentOwner>
-<isOther>0</isOther>
-<officerTitle>CEO - CORPORATE - GLOBAL.CEO.</officerTitle>
-</reportingOwnerRelationship>
+    <reportingOwnerId>
+        <rptOwnerCik>0001184940</rptOwnerCik>
+        <rptOwnerName>KANNAPPAN S KENNETH</rptOwnerName>
+    </reportingOwnerId>
+
+    <reportingOwnerAddress>
+        <rptOwnerStreet1>345 ENCINAL STREET</rptOwnerStreet1>
+        <rptOwnerStreet2/>
+        <rptOwnerCity>SANTA CRUZ</rptOwnerCity>
+        <rptOwnerState>CA</rptOwnerState>
+        <rptOwnerZipCode>95060</rptOwnerZipCode>
+        <rptOwnerStateDescription/>
+    </reportingOwnerAddress>
+
+    <reportingOwnerRelationship>
+        <isDirector>1</isDirector>
+        <isOfficer>1</isOfficer>
+        <isTenPercentOwner>0</isTenPercentOwner>
+        <isOther>0</isOther>
+        <officerTitle>CEO - CORPORATE - GLOBAL.CEO.</officerTitle>
+    </reportingOwnerRelationship>
 </reportingOwner>
 
 <nonDerivativeTable>
@@ -61,7 +63,7 @@
 </transactionAmounts>
 
 <postTransactionAmounts>
-<sharesOwnedFollowingTransaction>
+    <sharesOwnedFollowingTransaction>
 <value>1530</value>
 </sharesOwnedFollowingTransaction>
 </postTransactionAmounts>
