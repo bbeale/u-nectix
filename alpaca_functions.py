@@ -5,14 +5,17 @@ from datetime import date, timedelta
 from statistics import mean
 from scipy import spatial
 from finta import TA
-from edgar import calculate_transaction_amount, download_xml, bs_xml_parse, calculate_8k_transaction_amount
+from finta.utils import to_dataframe
+from edgar import calculate_transaction_amount, download_xml, calculate_8k_transaction_amount
 import alpaca_trade_api as tradeapi
 import twitter
 import spacy
 import nltk
 import matplotlib.pyplot as plt
+import tensorflow as tf
 import numpy as np
 import pandas as pd
+import pandas_datareader.data as web
 import configparser
 import requests
 import pprint
@@ -20,6 +23,10 @@ import sys
 import time
 import os
 import json
+
+
+# from empyrical import *
+# import alphalens
 
 
 config = configparser.ConfigParser()
@@ -39,9 +46,19 @@ api = tradeapi.REST(
     api_version = config["alpaca"]["VERSION"]
 )
 
-nlp = spacy.load("en_core_web_lg")
+"""
+> `python -m spacy download en_core_web_md`  
+> `python -m spacy download en_core_web_lg`&emsp;&emsp;&ensp;*optional library*  
+> `python -m spacy download en_vectors_web_lg`&emsp;*optional library*  
+
+"""
+
+
+nlp = spacy.load("en_vectors_web_lg")
 nltk.download('vader_lexicon')
 sid = SentimentIntensityAnalyzer()
+
+sess = tf.InteractiveSession()
 
 
 def time_formatter(time_stamp, time_format=None):
@@ -118,7 +135,7 @@ def write_barset_to_file(barset, ticker):
             raise FileExistsError
 
 
-def get_stuff_to_trade():
+def get_stuff_to_trade(curdate, backdate):
     """ Loops through all securities with volume data, grabs the best ones for trading according to the indicators
 
     :return vol_assets: list of dictionaries representing intraday, MACD, RSI, RoC, and stochastic oscillators
@@ -147,10 +164,11 @@ def get_stuff_to_trade():
     for i in list(filter(lambda ass: ass.tradable is True, assets)):
 
         symbol = i.symbol
-        today = time_formatter(time.time())
-        start = time_formatter(time.time() - (604800 * 2))
-
-        barset = api.get_barset(symbol, "1Min", after=start)
+        # today = time_formatter(time.time())
+        # start = time_formatter(time.time() - (604800 * 2))
+        today = curdate
+        start = backdate
+        barset = api.get_barset(symbol, "1D", after=start)
         # barset = api.get_barset("VRSK", "15Min", after=start)
         symbol_bars = barset[symbol]
         vmean = 0
@@ -208,6 +226,9 @@ def calculate_indicators(d_file, ticker):
     ix = int(len(data) / 4)
     bullish_pattern = bullish_candlestick_patterns(data.iloc[-1], data.iloc[-2], data.iloc[-3])
 
+    # get timestamps
+    timestamps = data["time"]
+
     macd_buy_sign = False
     mfi_buy_sign = False
     stoch_buy_sign = False
@@ -260,6 +281,7 @@ def calculate_indicators(d_file, ticker):
     stoch_pos_momentum = stoch.iloc[-1] >= stoch.iloc[-2] >= stoch.iloc[-3]
 
     td = dict()
+    td["timestamp"] = timestamps
     td["ticker"] = ticker
     td["is_bullish"] = is_bullish
     td["bullish_pattern"] = bullish_pattern
@@ -317,7 +339,7 @@ def get_sentiment(ticker, dataframe):
     return dataframe
 
 
-def get_edgar_score(dataframe):
+def get_edgar_score(dataframe, ticker):
 
     TOKEN = config["edgar"]["TOKEN"]
 
@@ -326,7 +348,8 @@ def get_edgar_score(dataframe):
 
     API = "{}?token={}".format(BASE_URL, TOKEN)
 
-    filter_8k = "formType:(\"8-K\") AND filedAt:[2019-08-01 TO 2019-09-26]"
+    # filter_8k = "ticker:(\"%s\") AND formType:(\"8-K\") AND filedAt:{2019-08-01 TO 2019-09-26}" % ticker
+    filter_8k = "ticker:(\"%s\") AND formType:(\"8-K\")" % ticker
     sort = [{"filedAt": {"order": "desc"}}]
     start = 0
     size = 100
@@ -380,17 +403,112 @@ def risk_management():
     raise NotImplementedError
 
 
+def get_returns(prices):
+    return (prices-prices.shift(-1))/prices
+
+
+def sort_returns(rets, num):
+    ins = []
+    outs = []
+    for i in range(len(rets) - num):
+        ins.append(rets[i:i + num].tolist())
+        outs.append(rets[i + num])
+    return np.array(ins), np.array(outs)
+
+
+def get_predictions(data):
+
+    data = data.astype(float)
+    size = 50
+    returns = get_returns(data)
+
+    # pass one of the above into sort_returns
+    ins, outs = sort_returns(returns, size)
+
+    div = int(.8 * ins.shape[0])
+    train_ins, train_outs = ins[:div], outs[:div]
+    test_ins, test_outs = ins[div:], outs[div:]
+
+    # sess = tf.InteractiveSession()
+    x = tf.placeholder(tf.float32, [None, size])
+    y_ = tf.placeholder(tf.float32, [None, 1])
+
+    # we define trainable variables for our model
+    W = tf.Variable(tf.random_normal([size, 1]))
+    b = tf.Variable(tf.random_normal([1]))
+
+    # we define our model: y = W*x + b
+    y = tf.matmul(x, W) + b
+
+    # MSE:
+    cost = tf.reduce_sum(tf.pow(y - y_, 2)) / (2 * 1000)
+    optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(cost)
+
+    # initialize variables to random values
+    init = tf.global_variables_initializer()
+    sess.run(init)
+    # run optimizer on entire training data set many times
+    for epoch in range(20000):
+        sess.run(optimizer, feed_dict={x: train_ins, y_: train_outs.reshape(1, -1).T})
+        # every 1000 iterations record progress
+        if (epoch+1) % 1000 == 0:
+            c = sess.run(cost, feed_dict={x: train_ins, y_: train_outs.reshape(1, -1).T})
+            print("Epoch:", '%04d' % (epoch+1), "cost=", "{:.9f}".format(c))
+
+    # train
+    predict = y
+    p = sess.run(predict, feed_dict={x: train_ins})
+    position = 2 * ((p > 0) - .5)
+    train_returns = position.reshape(-1) * train_outs
+    # plot(np.cumprod(returns + 1))
+
+    #test
+    predict = y
+    p = sess.run(predict, feed_dict={x: test_ins})
+    position = 2*((p>0)-.5)
+    test_returns = position.reshape(-1) * test_outs
+
+    return train_returns, test_returns
+
+
 def main():
 
-    # raw_data, ticker = get_stuff_to_trade()
-    raw_data = os.path.relpath("data\\VRSK_test_data_9-2018-9-2019-1min.csv")         # 1min
-    # raw_data = os.path.relpath("data/VRSK_test_data_9-20189-9-2019-15min.csv")        # 15min
-    # raw_data = os.path.relpath("data/VRSK_test_data_fast.csv")                        # fast window
-    # raw_data = os.path.relpath("data/VRSK_test_data_short_window_minute_int.csv")       # fast long window
-    ticker = "VRSK"
+    today = time_formatter(time.time())
+    start = time_formatter(time.time() - (604800 * 13))         # Trying with the last 120 ish days # 52))
+
+    # raw_data, ticker = get_stuff_to_trade(today, start)
+
+    ticker = "AMAT"
+    raw_data = os.path.relpath("data/AMAT_test_data_1D_year_OCT2018-2019_2.csv")        # 1d window
+
+    # Calculate indicators and stuff
     indicators = calculate_indicators(raw_data, ticker)
-    get_sentiment(ticker, indicators)
-    get_edgar_score(indicators)
+    indicators = get_sentiment(ticker, indicators)
+    # get_edgar_score(indicators, ticker)
+
+    # Train models
+    print("volume")
+    volume_train, volume_test = get_predictions(indicators["data"]["volume"])
+    print("high price")
+    high_train, high_test = get_predictions(indicators["data"]["high"])
+    print("closing price")
+    close_train, close_test = get_predictions(indicators["data"]["close"])
+    print("macd")
+    macd_train, macd_test = get_predictions(indicators["macd"])
+    signal_train, signal_test = get_predictions(indicators["signal"])
+    print("MFI")
+    mfi_train, mfi_test = get_predictions(indicators["mfi"])
+    print("Stochastic oscillator")
+    stoch_train, stoch_test = get_predictions(indicators["stoch"])
+
+    volume_test = volume_test[~np.isnan(volume_test)]
+    high_test = high_test[~np.isnan(high_test)]
+    close_test = close_test[~np.isnan(close_test)]
+    macd_test = macd_test[~np.isnan(macd_test)]
+    signal_test = signal_test[~np.isnan(signal_test)]
+    mfi_test = mfi_test[~np.isnan(mfi_test)]
+    stoch_test = stoch_test[~np.isnan(stoch_test)]
+
     print(".")
 
 
