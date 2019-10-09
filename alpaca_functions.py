@@ -280,38 +280,37 @@ def calculate_indicators(d_file, ticker):
 
     stoch_pos_momentum = stoch.iloc[-1] >= stoch.iloc[-2] >= stoch.iloc[-3]
 
-    td = dict()
-    td["timestamp"] = timestamps
-    td["ticker"] = ticker
-    td["is_bullish"] = is_bullish
-    td["bullish_pattern"] = bullish_pattern
+    # td = dict()
+    data["ticker"] = ticker
+    # td["is_bullish"] = is_bullish
+    # td["bullish_pattern"] = bullish_pattern
     # macd results
-    td["data"] = data
-    td["macd"] = _macds
-    td["signal"] = _signals
-    td["macd_buy_sign"] = macd_buy_sign
-    td["macd_10day_mean"] = macd_10day_mean
-    td["signal_10day_mean"] = signal_10day_mean
-    td["macd_pos_momentum"] = macd_pos_momentum
-    td["macd_signal_pos_momentum"] = macd_signal_pos_momentum
+    # td["data"] = data
+    data["macd"] = _macds
+    data["signal"] = _signals
+    # td["macd_buy_sign"] = macd_buy_sign
+    # td["macd_10day_mean"] = macd_10day_mean
+    # td["signal_10day_mean"] = signal_10day_mean
+    # td["macd_pos_momentum"] = macd_pos_momentum
+    # td["macd_signal_pos_momentum"] = macd_signal_pos_momentum
     # mfi results
-    td["mfi"] = mfi
-    td["mfi_buy_sign"] = mfi_buy_sign
-    td["mfi_10day_mean"] = mfi_10day_mean
-    td["mfi_pos_momentum"] = mfi_pos_momentum
+    data["mfi"] = mfi
+    # td["mfi_buy_sign"] = mfi_buy_sign
+    # td["mfi_10day_mean"] = mfi_10day_mean
+    # td["mfi_pos_momentum"] = mfi_pos_momentum
     # stoch results
-    td["stoch"] = stoch
-    td["stoch_buy_sign"] = stoch_buy_sign
-    td["stoch_10day_mean"] = stoch_10day_mean
-    td["stoch_pos_momentum"] = stoch_pos_momentum
+    data["stoch"] = stoch
+    # td["stoch_buy_sign"] = stoch_buy_sign
+    # td["stoch_10day_mean"] = stoch_10day_mean
+    # td["stoch_pos_momentum"] = stoch_pos_momentum
+    # if td and len(td.keys()) > 0:
+    #     return td
+    # else:
+    #     raise ValueError
+    return data
 
-    if td and len(td.keys()) > 0:
-        return td
-    else:
-        raise ValueError
 
-
-def get_sentiment(ticker, dataframe):
+def get_sentiment(ticker):
 
     t_api = twitter.Api(config["twitter"]["CONSUMER_KEY"], config["twitter"]["CONSUMER_SECRET"], config["twitter"]["ACCESS_TOKEN_KEY"], config["twitter"]["ACCESS_TOKEN_SECRET"])
 
@@ -330,13 +329,7 @@ def get_sentiment(ticker, dataframe):
     else:
         sentiment = "negative"
 
-    if "text_polarity" not in dataframe.keys() or dataframe["text_polarity"] is None:
-        dataframe["text_polarity"] = text_polarity
-
-    if "sentiment" not in dataframe.keys() or dataframe["sentiment"] is None:
-        dataframe["sentiment"] = sentiment
-
-    return dataframe
+    return sentiment
 
 
 def get_edgar_score(dataframe, ticker):
@@ -473,43 +466,43 @@ def get_predictions(data):
 
 def main():
 
-    today = time_formatter(time.time())
-    start = time_formatter(time.time() - (604800 * 13))         # Trying with the last 120 ish days # 52))
+    # today = time_formatter(time.time())
+    # start = time_formatter(time.time() - (604800 * 13))         # Trying with the last 120 ish days # 52))
+    #
+    # # raw_data, ticker = get_stuff_to_trade(today, start)
+    #
+    # ticker = "AMAT"
+    # raw_data = os.path.relpath("data/AMAT_test_data_1D_year_OCT2018-2019_2.csv")        # 1d window
+    #
+    # # Calculate indicators and stuff
+    # indicators = calculate_indicators(raw_data, ticker)
+    # indicators = get_sentiment(ticker)
+    # # get_edgar_score(indicators, ticker)
+    #
+    # # Train models
+    # print("volume")
+    # volume_train, volume_test = get_predictions(indicators["data"]["volume"])
+    # print("high price")
+    # high_train, high_test = get_predictions(indicators["data"]["high"])
+    # print("closing price")
+    # close_train, close_test = get_predictions(indicators["data"]["close"])
+    # print("macd")
+    # macd_train, macd_test = get_predictions(indicators["macd"])
+    # signal_train, signal_test = get_predictions(indicators["signal"])
+    # print("MFI")
+    # mfi_train, mfi_test = get_predictions(indicators["mfi"])
+    # print("Stochastic oscillator")
+    # stoch_train, stoch_test = get_predictions(indicators["stoch"])
+    #
+    # volume_test = volume_test[~np.isnan(volume_test)]
+    # high_test = high_test[~np.isnan(high_test)]
+    # close_test = close_test[~np.isnan(close_test)]
+    # macd_test = macd_test[~np.isnan(macd_test)]
+    # signal_test = signal_test[~np.isnan(signal_test)]
+    # mfi_test = mfi_test[~np.isnan(mfi_test)]
+    # stoch_test = stoch_test[~np.isnan(stoch_test)]
 
-    # raw_data, ticker = get_stuff_to_trade(today, start)
-
-    ticker = "AMAT"
-    raw_data = os.path.relpath("data/AMAT_test_data_1D_year_OCT2018-2019_2.csv")        # 1d window
-
-    # Calculate indicators and stuff
-    indicators = calculate_indicators(raw_data, ticker)
-    indicators = get_sentiment(ticker, indicators)
-    # get_edgar_score(indicators, ticker)
-
-    # Train models
-    print("volume")
-    volume_train, volume_test = get_predictions(indicators["data"]["volume"])
-    print("high price")
-    high_train, high_test = get_predictions(indicators["data"]["high"])
-    print("closing price")
-    close_train, close_test = get_predictions(indicators["data"]["close"])
-    print("macd")
-    macd_train, macd_test = get_predictions(indicators["macd"])
-    signal_train, signal_test = get_predictions(indicators["signal"])
-    print("MFI")
-    mfi_train, mfi_test = get_predictions(indicators["mfi"])
-    print("Stochastic oscillator")
-    stoch_train, stoch_test = get_predictions(indicators["stoch"])
-
-    volume_test = volume_test[~np.isnan(volume_test)]
-    high_test = high_test[~np.isnan(high_test)]
-    close_test = close_test[~np.isnan(close_test)]
-    macd_test = macd_test[~np.isnan(macd_test)]
-    signal_test = signal_test[~np.isnan(signal_test)]
-    mfi_test = mfi_test[~np.isnan(mfi_test)]
-    stoch_test = stoch_test[~np.isnan(stoch_test)]
-
-    print(".")
+    pass
 
 
 if __name__ == "__main__":
