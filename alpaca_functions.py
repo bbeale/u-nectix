@@ -75,8 +75,8 @@ def time_formatter(time_stamp, time_format=None):
     return date.fromtimestamp(time_stamp).strftime(time_format)
 
 
-def bullish_sequence(num1, num2, num3, num4, num5):
-    return num1 >= num2 >= num3 >= num4 >= num5
+def bullish_sequence(num1, num2, num3):     # , num4, num5):
+    return num1 >= num2 >= num3         # >= num4 >= num5
 
 
 def bullish_candlestick_patterns(c1, c2, c3):
@@ -220,8 +220,8 @@ def calculate_indicators(d_file, ticker):
         data["close"].iloc[-1],
         data["close"].iloc[-2],
         data["close"].iloc[-3],
-        data["close"].iloc[-4],
-        data["close"].iloc[-5]
+        # data["close"].iloc[-4],
+        # data["close"].iloc[-5]
     )
     ix = int(len(data) / 4)
     bullish_pattern = bullish_candlestick_patterns(data.iloc[-1], data.iloc[-2], data.iloc[-3])
@@ -248,16 +248,16 @@ def calculate_indicators(d_file, ticker):
         _macds.iloc[-1],
         _macds.iloc[-2],
         _macds.iloc[-3],
-        _macds.iloc[-4],
-        _macds.iloc[-5]
+        # _macds.iloc[-4],
+        # _macds.iloc[-5]
     )
 
     macd_signal_pos_momentum = bullish_sequence(
         _signals.iloc[-1],
         _signals.iloc[-2],
         _signals.iloc[-3],
-        _signals.iloc[-4],
-        _signals.iloc[-5]
+        # _signals.iloc[-4],
+        # _signals.iloc[-5]
     )
 
     # get money flow index
@@ -280,33 +280,36 @@ def calculate_indicators(d_file, ticker):
 
     stoch_pos_momentum = stoch.iloc[-1] >= stoch.iloc[-2] >= stoch.iloc[-3]
 
-    # td = dict()
     data["ticker"] = ticker
+    data["macd"] = _macds
+    data["signal"] = _signals
+    data["mfi"] = mfi
+    data["stoch"] = stoch
+
+    # td = dict()
     # td["is_bullish"] = is_bullish
     # td["bullish_pattern"] = bullish_pattern
     # macd results
     # td["data"] = data
-    data["macd"] = _macds
-    data["signal"] = _signals
     # td["macd_buy_sign"] = macd_buy_sign
     # td["macd_10day_mean"] = macd_10day_mean
     # td["signal_10day_mean"] = signal_10day_mean
     # td["macd_pos_momentum"] = macd_pos_momentum
     # td["macd_signal_pos_momentum"] = macd_signal_pos_momentum
     # mfi results
-    data["mfi"] = mfi
     # td["mfi_buy_sign"] = mfi_buy_sign
     # td["mfi_10day_mean"] = mfi_10day_mean
     # td["mfi_pos_momentum"] = mfi_pos_momentum
     # stoch results
-    data["stoch"] = stoch
     # td["stoch_buy_sign"] = stoch_buy_sign
     # td["stoch_10day_mean"] = stoch_10day_mean
     # td["stoch_pos_momentum"] = stoch_pos_momentum
+
     # if td and len(td.keys()) > 0:
     #     return td
     # else:
     #     raise ValueError
+
     return data
 
 
