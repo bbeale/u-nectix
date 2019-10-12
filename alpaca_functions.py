@@ -92,47 +92,83 @@ def bullish_candlestick_patterns(c1, c2, c3):
     if c1.low < c1.open < c1.close <= c1.high and \
             c1.high - c1.close < c1.open - c1.low and \
             c1.close - c1.open < c1.open - c1.low:
-        pattern = 'hammer'
+        pattern = "hammer"
     if c1.low <= c1.open < c1.close < c1.high and \
             c1.high - c1.close > c1.open - c1.low and \
             c1.close - c1.open < c1.high - c1.close:
-        pattern = 'inverseHammer'
+        pattern = "inverseHammer"
     # LCOH bearish
     if c2.low < c2.close < c2.open < c2.high and \
             c1.low <= c1.open < c1.close < c1.high and \
             c1.open < c2.close and \
             c1.close - c1.open > c2.open - c2.close:
-        pattern = 'bullishEngulfing'
+        pattern = "bullishEngulfing"
     if c2.low < c2.close < c2.open < c2.high and \
             c1.low <= c1.open < c1.close < c1.high and \
             c1.open < c2.close and \
             c1.close > c2.close + (c2.open - c2.close) / 2:
-        pattern = 'piercingLine'
+        pattern = "piercingLine"
     if c3.low < c3.close < c3.open < c3.high and \
             c1.low <= c1.open < c1.close < c1.high and \
             abs(c2.open - c2.close) < abs(c3.open - c3.close) and \
             abs(c2.open - c2.close) < abs(c1.open - c1.close):
-        pattern = 'morningStar'
+        pattern = "morningStar"
     if c3.low <= c3.open < c3.close < c3.high and \
             c2.low <= c2.open < c2.close < c2.high and \
             c1.low <= c1.open < c1.close < c1.high and \
             c3.close <= c2.open and \
             c2.close <= c1.open:
-        pattern = 'threeWhiteSoldiers'
+        pattern = "threeWhiteSoldiers"
     return pattern
 
 
-def write_barset_to_file(barset, ticker):
-        datafile = os.path.relpath("data/{}_data_{}.csv".format(ticker, time.time()))
-        with open(datafile, "w+") as df:
-            df.write("time,open,high,low,close,volume,vol_avg,,is_bullish,macd,signal,macd_buy_sign,macd_pos_momentum,mfi,mfi_buy_sign,mfi_pos_momentum,stoch,stoch_buy_sign,stoch_pos_momentum,sentiment\n")
-            for b in barset:
-                df.write("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n".format(b.t, b.o, b.c, b.h, b.l, b.v, 0,0,0,0,0,0,0,0,0,0,0,0,0))
+def get_stuff_to_trade_v2(backdate):
 
-        if type(datafile) is str and len(datafile) > 0:
-            return datafile, ticker
-        else:
-            raise FileExistsError
+    account                 = api.get_account()
+    # Check if our account is restricted from trading.
+    if account.trading_blocked:
+        print("Account is currently restricted from trading.")
+
+    # Check how much money we can use to open new positions.
+    print("${} is available as buying power.".format(account.buying_power))
+
+    active_assets = api.list_assets(status="active")
+
+    # Filter the assets down to just those on NASDAQ.
+    assets = [a for a in active_assets if a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
+    bullish_to_compare = {}
+    bearish_to_compare = {}
+    for i in list(filter(lambda ass: ass.tradable is True, assets)):
+
+        symbol = i.symbol
+        start = backdate
+        barset = api.get_barset(symbol, "1D", after=start)
+        symbol_bars = barset[symbol]
+
+        df = pd.DataFrame()
+        df["time"] = [bar.t for bar in symbol_bars if bar is not None]
+        df["open"] = [bar.o for bar in symbol_bars if bar is not None]
+        df["high"] = [bar.h for bar in symbol_bars if bar is not None]
+        df["low"] = [bar.l for bar in symbol_bars if bar is not None]
+        df["close"] = [bar.c for bar in symbol_bars if bar is not None]
+        df["volume"] = [bar.v for bar in symbol_bars if bar is not None]
+
+        pattern = bullish_candlestick_patterns(df.iloc[-3], df.iloc[-2], df.iloc[-1])
+
+        if pattern is None:
+            continue
+
+        if pattern in ["hammer", "inverseHammer"]:
+            bullish_to_compare[symbol] = df
+
+        if pattern in ["bullishEngulfing", "piercingLine", "morningStar", "threeWhiteSoldiers"]:
+            bearish_to_compare[symbol] = df
+
+        if len(bearish_to_compare) is 5 or len(bullish_to_compare) is 5:
+            if len(bearish_to_compare) > len(bullish_to_compare):
+                return bearish_to_compare
+            elif len(bullish_to_compare) > len(bearish_to_compare):
+                return bullish_to_compare
 
 
 def get_stuff_to_trade(curdate, backdate):
@@ -195,6 +231,49 @@ def get_stuff_to_trade(curdate, backdate):
             return datafile, symbol
         else:
             raise FileExistsError
+
+
+def calculate_indicators_v2(ticker, backdate):
+
+    if not ticker or ticker is None:
+        raise ValueError("Invalid ticker value")
+
+    if not backdate or backdate is None:
+        raise ValueError("Invalid backdate value")
+
+    try:
+        bars = api.get_barset(ticker, "1D", after=backdate)[ticker]
+    except OSError:
+        raise OSError
+
+    data = pd.DataFrame()
+    data["time"]    = [bar.t for bar in bars if bar is not None]
+    data["open"]    = [bar.o for bar in bars if bar is not None]
+    data["high"]    = [bar.h for bar in bars if bar is not None]
+    data["low"]     = [bar.l for bar in bars if bar is not None]
+    data["close"]   = [bar.c for bar in bars if bar is not None]
+    data["volume"]  = [bar.v for bar in bars if bar is not None]
+
+    print(data["close"].iloc[-1], data["close"].iloc[-2], data["close"].iloc[-3])
+
+    # get MACD
+    macd = TA.MACD(data)
+    _macds = macd["MACD"]
+    _signals = macd["SIGNAL"]
+
+    # get money flow index
+    mfi = TA.MFI(data)
+
+    # get stochastic oscillator
+    stoch = TA.STOCH(data)
+
+    data["ticker"]  = ticker
+    data["macd"]    = _macds
+    data["signal"]  = _signals
+    data["mfi"]     = mfi
+    data["stoch"]   = stoch
+
+    return data
 
 
 def calculate_indicators(d_file, ticker):
@@ -315,11 +394,20 @@ def calculate_indicators(d_file, ticker):
 
 def get_sentiment(ticker):
 
-    t_api = twitter.Api(config["twitter"]["CONSUMER_KEY"], config["twitter"]["CONSUMER_SECRET"], config["twitter"]["ACCESS_TOKEN_KEY"], config["twitter"]["ACCESS_TOKEN_SECRET"])
+    t_api = twitter.Api(
+        config["twitter"]["CONSUMER_KEY"],
+        config["twitter"]["CONSUMER_SECRET"],
+        config["twitter"]["ACCESS_TOKEN_KEY"],
+        config["twitter"]["ACCESS_TOKEN_SECRET"]
+    )
 
     results = t_api.GetSearch("{} stock".format(ticker), result_type="recent")
 
-    result_dicts = [dict(created_at=time_formatter(float(result.created_at_in_seconds)), user=result.user.name, text=result.text) for result in results if "RT" not in result.text]
+    result_dicts = [dict(
+        created_at  = time_formatter(float(result.created_at_in_seconds)),
+        user        = result.user.name,
+        text        = result.text
+    ) for result in results if "RT" not in result.text]
 
     texts = [res["text"] for res in result_dicts]
     text = "\n\n".join(texts)
@@ -467,46 +555,6 @@ def get_predictions(data):
     return train_returns, test_returns
 
 
-def main():
-
-    # today = time_formatter(time.time())
-    # start = time_formatter(time.time() - (604800 * 13))         # Trying with the last 120 ish days # 52))
-    #
-    # # raw_data, ticker = get_stuff_to_trade(today, start)
-    #
-    # ticker = "AMAT"
-    # raw_data = os.path.relpath("data/AMAT_test_data_1D_year_OCT2018-2019_2.csv")        # 1d window
-    #
-    # # Calculate indicators and stuff
-    # indicators = calculate_indicators(raw_data, ticker)
-    # indicators = get_sentiment(ticker)
-    # # get_edgar_score(indicators, ticker)
-    #
-    # # Train models
-    # print("volume")
-    # volume_train, volume_test = get_predictions(indicators["data"]["volume"])
-    # print("high price")
-    # high_train, high_test = get_predictions(indicators["data"]["high"])
-    # print("closing price")
-    # close_train, close_test = get_predictions(indicators["data"]["close"])
-    # print("macd")
-    # macd_train, macd_test = get_predictions(indicators["macd"])
-    # signal_train, signal_test = get_predictions(indicators["signal"])
-    # print("MFI")
-    # mfi_train, mfi_test = get_predictions(indicators["mfi"])
-    # print("Stochastic oscillator")
-    # stoch_train, stoch_test = get_predictions(indicators["stoch"])
-    #
-    # volume_test = volume_test[~np.isnan(volume_test)]
-    # high_test = high_test[~np.isnan(high_test)]
-    # close_test = close_test[~np.isnan(close_test)]
-    # macd_test = macd_test[~np.isnan(macd_test)]
-    # signal_test = signal_test[~np.isnan(signal_test)]
-    # mfi_test = mfi_test[~np.isnan(mfi_test)]
-    # stoch_test = stoch_test[~np.isnan(stoch_test)]
-
-    pass
-
-
-if __name__ == "__main__":
-    main()
+def submit_buy_order(ticker, transaction_side, ttype, time_in_force):
+    global api
+    return api.submit_order(ticker, transaction_side, ttype, time_in_force)
