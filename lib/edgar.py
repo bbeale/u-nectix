@@ -1,41 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, HashingVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import xml.etree.ElementTree as ET
-import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
-from statistics import mean
-from spacy import displacy
-import pandas as pd
-import numpy as np
-import configparser
-import matplotlib
 import requests
-import spacy
-import nltk
-import json
 import time
-import sys
-import os
 import re
-
-# %matplotlib inline
-
-nlp = spacy.load("en_core_web_lg")
-nltk.download("vader_lexicon")
-config = configparser.ConfigParser()
-
-try:
-    config.read(os.path.relpath("config.ini"))
-except FileExistsError as e:
-    print("File exists error: {}".format(e))
-    sys.exit(1)
 
 
 def compress_filings(filings):
+    """Get a smaller data set (for testing).
+
+    :param filings:
+    :return:
+    """
     store = {}
     compressed_filings = []
     for filing in filings:
@@ -81,7 +58,6 @@ def download_xml(url, tries=1):
 def calculate_transaction_amount(xml):
     """Calculate the total transaction amount in $ of a giving form 4 in XML.
 
-    # TODO: customize this for 8-K
     :param xml:
     :return:
     """
@@ -170,6 +146,8 @@ def add_non_derivative_transaction_amounts(filings):
 
 def bs_xml_parse(url, tries=1):
     """Version of download_xml using BeautifulSoup. Clearly naming conventions aren't a thing.
+
+    This function is in progress and may never get finished because it isn't a super high priority.
 
     :param url:
     :param tries:
