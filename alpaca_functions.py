@@ -1,21 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from datetime import date, timedelta
+from datetime import date
 from statistics import mean
-from scipy import spatial
 from finta import TA
-from finta.utils import to_dataframe
-from edgar import calculate_transaction_amount, download_xml, calculate_8k_transaction_amount
+from lib.edgar import calculate_transaction_amount, download_xml, calculate_8k_transaction_amount
 import alpaca_trade_api as tradeapi
 import twitter
 import spacy
 import nltk
-import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-import pandas_datareader.data as web
 import configparser
 import requests
 import pprint
