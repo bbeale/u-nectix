@@ -21,6 +21,7 @@ from alpaca_functions import (
 import alpaca_trade_api as tradeapi
 import numpy as np
 import configparser
+import twitter
 import time
 import sys
 import os
@@ -42,6 +43,13 @@ alpaca_api = tradeapi.REST(
 )
 
 edgar_token = config["edgar"]["TOKEN"]
+
+twitter_api = twitter.Api(
+    config["twitter"]["CONSUMER_KEY"],
+    config["twitter"]["CONSUMER_SECRET"],
+    config["twitter"]["ACCESS_TOKEN_KEY"],
+    config["twitter"]["ACCESS_TOKEN_SECRET"]
+)
 
 
 def algo():
@@ -74,7 +82,7 @@ def algo():
 
 def run():
 
-    global alpaca_api
+    global alpaca_api, twitter_api
     # initial trade state -- False means not currently trading anything
     trading = False
 
@@ -83,9 +91,9 @@ def run():
     assets      = AssetSelector(alpaca_api).get_stuff_to_trade_v2()
     indicators  = Indicators(alpaca_api, assets).get_indicators()
     edgar       = EdgarInterface(edgar_token, indicators).get_edgar_signals()
-    twitter     = TwitterInterface()    # indicators=indicators)
-    sentiment   = Sent()              # indicators=indicators)
-    predictions = Predictor()       # indicators=indicators)
+    twitter     = TwitterInterface(twitter_api, indicators).get_twitter_sentiments()
+    # sentiment   = Sent()              # indicators=indicators)
+    # predictions = Predictor(indicators)
 
     # calculate trade decision
     # use data from object instances
