@@ -81,10 +81,10 @@ def run():
     # maybe it makes more sense to initialize the alpaca sdk here since multiple classes are callign it
 
     assets      = AssetSelector(alpaca_api).get_stuff_to_trade_v2()
-    indicators  = Indicators(alpaca_api, assets)       # assets=assets)
-    edgar       = EdgarInterface(edgar_token)        # indicators=indicators)
-    twitter = TwitterInterface()    # indicators=indicators)
-    sentiment = Sent()              # indicators=indicators)
+    indicators  = Indicators(alpaca_api, assets).get_indicators()
+    edgar       = EdgarInterface(edgar_token, indicators).get_edgar_signals()
+    twitter     = TwitterInterface()    # indicators=indicators)
+    sentiment   = Sent()              # indicators=indicators)
     predictions = Predictor()       # indicators=indicators)
 
     # calculate trade decision

@@ -27,13 +27,17 @@ class EdgarInterface:
         self.token          = edgar_token
         self.api            = "{}?token={}".format(self.base_url, self.token)
 
+    def get_edgar_signals(self):
+        """Loop through tickers and append EDGAR signals to that ticker's dataframe"""
         for ticker in self.dataframe.keys():
             fdate = self.dataframe[ticker]["time"].iloc[-7]
             tdate = time_formatter(time.time())
             self.dataframe[ticker] = self.calculate_edgar_signal(ticker, fdate, tdate)
 
     def calculate_edgar_signal(self, ticker, from_date, to_date):
-        """Calculate edgar signal
+        """Calculate edgar signal given a ticker symbol and a date range.
+
+        Calculations come from data scraped from filings during that date range.
 
         :param ticker:
         :param from_date:

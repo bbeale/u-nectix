@@ -17,11 +17,20 @@ class Indicators:
         self.buying_power   = self.account.buying_power
         self.dataframe      = dataframe
 
+    def get_indicators(self):
+        """Loop through tickers and append indicators to that ticker's dataframe"""
         for ticker in self.dataframe.keys():
             self.dataframe[ticker] = self.calculate_indicators_v2(ticker)
 
     def calculate_indicators_v2(self, ticker, backdate=None):
+        """Given a ticker symbol and a historic, calculate various indicators from then to now.
 
+        Currently, MACD, MFI and stochastic oscillators are implemented.
+
+        :param ticker: a stock ticker symbol
+        :param backdate: start of the historic data lookup period. If none, defaults to the last 13 weeks (1 quarter)
+        :return: dataframe built from barset objects, including indicators
+        """
         if not ticker or ticker is None:
             raise ValueError("Invalid ticker value")
 
