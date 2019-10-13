@@ -21,6 +21,7 @@ class Indicators:
         """Loop through tickers and append indicators to that ticker's dataframe"""
         for ticker in self.dataframe.keys():
             self.dataframe[ticker] = self.calculate_indicators_v2(ticker)
+        return self.dataframe
 
     def calculate_indicators_v2(self, ticker, backdate=None):
         """Given a ticker symbol and a historic, calculate various indicators from then to now.
