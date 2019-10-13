@@ -67,6 +67,7 @@ sklearn==0.0
 soupsieve==1.9.3
 spacy==2.1.8
 srsly==0.1.0
+tensorflow==2.0.0
 terminado==0.8.2
 testpath==0.4.2
 thinc==7.0.8
