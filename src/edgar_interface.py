@@ -33,6 +33,7 @@ class EdgarInterface:
             fdate = self.dataframe[ticker]["time"].iloc[-7]
             tdate = time_formatter(time.time())
             self.dataframe[ticker] = self.calculate_edgar_signal(ticker, fdate, tdate)
+        return self.dataframe
 
     def calculate_edgar_signal(self, ticker, from_date, to_date):
         """Calculate edgar signal given a ticker symbol and a date range.
