@@ -25,44 +25,35 @@ class TwitterInterface:
         self.sid        = SentimentIntensityAnalyzer()
         self.api        = twitter_api_interface
         self.dataframe  = dataframe
-        self.tweets     = None
+        self.tweets     = dict()
 
-    def get_twitter_sentiments(self):
-        """Loop through tickers and calculate a sentiment score based on Twitter history."""
+    def get_ticker_tweets(self):
+        """Loop through tickers and return text from recent Twitter history."""
         for ticker in self.dataframe.keys():
-            self.dataframe[ticker] = self.get_sentiment(ticker)
+            self.tweets[ticker] = self.get_tweets(ticker)
+        return self.tweets
 
-    def get_sentiment(self, ticker):
-        """Given a ticker symbol, return a sentiment score based on recent tweets.
-
-        TODO: Make this look up tweets by date range vs relying on result_type="recent"
-
-        ALSO TODO: Move this to SentimentAnalysis class
-            - this class should only interface with Twitter
-            - sentiment analysis should not care where the text comes from
-            - sentiment analysis should occur whether given tweets or other sources
-            - prep tweet results for sent. analysis here but don't do the actual analysis
+    def get_tweets(self, ticker, search_terms=None):
+        """Get tweets about a ticker
 
         :param ticker:
-        :return:
+        :param search_terms: optional additional search term
+        :return: string consisting of text from tweets
         """
-        results = self.api.GetSearch("{} stock".format(ticker), result_type="recent")
+        if not search_terms or search_terms is None:
+            query = "{} stock".format(ticker)
+        else:
+            query = "{} stock {}".format(ticker, search_terms)
 
-        result_dicts = [dict(
-            created_at=time_formatter(float(result.created_at_in_seconds)),
-            user=result.user.name,
-            text=result.text
+        results = self.api.GetSearch(query, result_type="recent")
+
+        result_dicts    = [dict(
+            created_at  = time_formatter(float(result.created_at_in_seconds)),
+            user        = result.user.name,
+            text        = result.text
         ) for result in results if "RT" not in result.text]
 
-        texts = [res["text"] for res in result_dicts]
-        text = "\n\n".join(texts)
+        texts           = [res["text"] for res in result_dicts]
+        text            = "\n\n".join(texts)
 
-        text_polarity = self.sid.polarity_scores(text)
-
-        if text_polarity["compound"] > 0:
-            sentiment = "positive"
-
-        else:
-            sentiment = "negative"
-
-        return sentiment
+        return text
