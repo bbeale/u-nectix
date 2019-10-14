@@ -90,10 +90,10 @@ def run():
 
     assets      = AssetSelector(alpaca_api).get_stuff_to_trade_v2()
     indicators  = Indicators(alpaca_api, assets).get_indicators()
-    edgar       = EdgarInterface(edgar_token, indicators).get_edgar_signals()
-    twitter     = TwitterInterface(twitter_api, indicators).get_twitter_sentiments()
-    # sentiment   = Sent()              # indicators=indicators)
-    # predictions = Predictor(indicators)
+    edgar       = EdgarInterface(edgar_token, indicators)       # .get_edgar_signals()
+    tweets      = TwitterInterface(twitter_api, indicators).get_ticker_tweets()
+    sentiments  = Sent(indicators, tweets).get_sentiments()              # indicators=indicators)
+    predictions = Predictor(indicators).get_securities_predictions()
 
     # calculate trade decision
     # use data from object instances
