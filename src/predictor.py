@@ -11,15 +11,16 @@ class Predictor:
 
     def __init__(self, dataframe):
 
-        self.sess       = tf.InteractiveSession()
-        self.dataframe  = dataframe
+        self.sess           = tf.compat.v1.InteractiveSession()
+        self.dataframe      = dataframe
+        self.predictions    = dict()
 
     def get_securities_predictions(self):
         """Loop through tickers and run prediction algorithm."""
         for ticker in self.dataframe.keys():
-
             # TODO: Need to iterate through each series in each data frame. Too lazy to do it now
-            self.dataframe[ticker] = (self.get_predictions(self.dataframe[ticker]))
+            self.predictions[ticker]["train"], self.dataframe[ticker]["test"] = self.get_predictions(self.dataframe[ticker])
+        return self.predictions
 
     def get_predictions(self, data):
         """Given a dataframe, return training and test data
@@ -38,23 +39,22 @@ class Predictor:
         train_ins, train_outs = ins[:div], outs[:div]
         test_ins, test_outs = ins[div:], outs[div:]
 
-        # sess = tf.InteractiveSession()
-        x = tf.placeholder(tf.float32, [None, size])
-        y_ = tf.placeholder(tf.float32, [None, 1])
+        x = tf.compat.v1.placeholder(tf.float32, [None, size])
+        y_ = tf.compat.v1.placeholder(tf.float32, [None, 1])
 
         # we define trainable variables for our model
-        W = tf.Variable(tf.random_normal([size, 1]))
-        b = tf.Variable(tf.random_normal([1]))
+        W = tf.Variable(tf.random.normal([size, 1]))
+        b = tf.Variable(tf.random.normal([1]))
 
         # we define our model: y = W*x + b
         y = tf.matmul(x, W) + b
 
         # MSE:
         cost = tf.reduce_sum(tf.pow(y - y_, 2)) / (2 * 1000)
-        optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(cost)
+        optimizer = tf.compat.v1.train.GradientDescentOptimizer(0.5).minimize(cost)
 
         # initialize variables to random values
-        init = tf.global_variables_initializer()
+        init = tf.compat.v1.global_variables_initializer()
         self.sess.run(init)
         # run optimizer on entire training data set many times
         for epoch in range(20000):
