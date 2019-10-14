@@ -20,20 +20,19 @@ class EdgarInterface:
         if not edgar_token or edgar_token is None:
             raise ValueError("Edgar token required for API access")
 
-        self.dataframe      = dataframe
-
-        # edgar stuff
         self.base_url       = "https://api.sec-api.io"
         self.token          = edgar_token
         self.api            = "{}?token={}".format(self.base_url, self.token)
+        self.dataframe      = dataframe
+        self.edgar_scores   = dict()
 
     def get_edgar_signals(self):
         """Loop through tickers and append EDGAR signals to that ticker's dataframe"""
         for ticker in self.dataframe.keys():
             fdate = self.dataframe[ticker]["time"].iloc[-7]
             tdate = time_formatter(time.time())
-            self.dataframe[ticker] = self.calculate_edgar_signal(ticker, fdate, tdate)
-        return self.dataframe
+            self.edgar_scores[ticker] = self.calculate_edgar_signal(ticker, fdate, tdate)
+        return self.edgar_scores
 
     def calculate_edgar_signal(self, ticker, from_date, to_date):
         """Calculate edgar signal given a ticker symbol and a date range.
