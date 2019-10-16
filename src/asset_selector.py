@@ -99,7 +99,10 @@ class AssetSelector:
         # Filter the assets down to just those on NASDAQ.
         assets = [a for a in active_assets if a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
         assets_with_recent_filings = {}
+
+        print("Going through assets looking for firms with recent SEC filings")
         for i in assets:
+            print("Company:", i.symbol)
 
             symbol          = i.symbol
             start           = backdate
@@ -107,16 +110,19 @@ class AssetSelector:
             filings         = ei.get_sec_filings(symbol, start, date, form_type="8-K")
 
             if filings["total"] > 0:
+                print("\tAdded:", i.symbol, " symbols:", len(assets_with_recent_filings.keys()))
                 filings = json.dumps(filings)
                 assets_with_recent_filings[symbol] = filings
 
             if len(assets_with_recent_filings.keys()) > 5:
                 return assets_with_recent_filings
             else:
-                print("Returning what we have if > 0")
-                if len(assets_with_recent_filings.keys()) > 0:
-                    return assets_with_recent_filings
-                else:
-                    continue
+                continue
 
+        print("\tDone")
+        if len(assets_with_recent_filings.keys()) > 0:
+            # return what we do have
+            return assets_with_recent_filings
+        else:
+            return None
 
