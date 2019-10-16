@@ -1,29 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 import requests
 import time
 import re
-
-
-def compress_filings(filings):
-    """Get a smaller data set (for testing).
-
-    :param filings:
-    :return:
-    """
-    store = {}
-    compressed_filings = []
-    for filing in filings:
-        filedAt = filing['filedAt']
-        if filedAt in store and store[filedAt] < 5:
-            compressed_filings.append(filing)
-            store[filedAt] += 1
-        elif filedAt not in store:
-            compressed_filings.append(filing)
-            store[filedAt] = 1
-    return compressed_filings
 
 
 def download_xml(url, tries=1):
@@ -34,7 +15,7 @@ def download_xml(url, tries=1):
     :return:
     """
     try:
-        response = requests.get(url)        # urllib.request.urlopen(url)
+        response = requests.get(url)
     except requests.exceptions.HTTPError as httpe:
         print(httpe, "Something went wrong. Wait for 5 seconds and try again.", tries)
         if tries < 5:
@@ -117,9 +98,12 @@ def calculate_8k_transaction_amount(xml):
             total_shares = init_shares
 
         else:
-            total_shares -= float(shares)
-
-    percent_traded = (float(total_shares)/float(init_shares))
+            total_shares += float(shares)
+    try:
+        percent_traded = (float(total_shares)/float(init_shares))
+    except TypeError as te:
+        print(te, "- total_shares and init_shares must not be none")
+        percent_traded = None
     return init_shares, total_shares, percent_traded, owner_holds_10_percent
 
 
