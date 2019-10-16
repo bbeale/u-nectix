@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from alpaca_functions import bullish_candlestick_patterns, time_formatter
+from src.edgar_interface import EdgarInterface
 import pandas as pd
+import json
 import time
 import sys
 
 
 class AssetSelector:
 
-    def __init__(self, alpaca_api_interface):
+    def __init__(self, alpaca_api_interface, edgar_token=None):
 
         if not alpaca_api_interface or alpaca_api_interface is None:
             raise ValueError("Alpaca API interface instance required")
@@ -16,6 +18,10 @@ class AssetSelector:
         self.api            = alpaca_api_interface
         self.account        = self.api.get_account()
         self.buying_power   = self.account.buying_power
+        self.edgar_token    = None
+
+        if edgar_token is not None:
+            self.edgar_token = edgar_token
 
     def get_stuff_to_trade_v2(self, backdate=None):
 
@@ -67,4 +73,50 @@ class AssetSelector:
                     return bearish_to_compare
                 elif len(bullish_to_compare) > len(bearish_to_compare):
                     return bullish_to_compare
+
+    def get_assets_with_8k_filings(self, backdate=None):
+
+        if not self.edgar_token or self.edgar_token is None:
+            raise NotImplementedError
+
+        if not backdate or backdate is None:
+            backdate = time_formatter(time.time() - 604800, time_format="%Y-%m-%d")
+
+        # Check if our account is restricted from trading.
+        if self.account.trading_blocked:
+            print("Account is currently restricted from trading.")
+            sys.exit(-1)
+
+        # Check how much money we can use to open new positions.
+        print("${} is available as buying power.".format(self.buying_power))
+
+        date = time_formatter(time.time(), time_format="%Y-%m-%d")
+
+        ei = EdgarInterface(self.edgar_token)
+
+        active_assets = self.api.list_assets(status="active")
+
+        # Filter the assets down to just those on NASDAQ.
+        assets = [a for a in active_assets if a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
+        assets_with_recent_filings = {}
+        for i in assets:
+
+            symbol          = i.symbol
+            start           = backdate
+
+            filings         = ei.get_sec_filings(symbol, start, date, form_type="8-K")
+
+            if filings["total"] > 0:
+                filings = json.dumps(filings)
+                assets_with_recent_filings[symbol] = filings
+
+            if len(assets_with_recent_filings.keys()) > 5:
+                return assets_with_recent_filings
+            else:
+                print("Returning what we have if > 0")
+                if len(assets_with_recent_filings.keys()) > 0:
+                    return assets_with_recent_filings
+                else:
+                    continue
+
 
