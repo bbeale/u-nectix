@@ -18,8 +18,10 @@ class Predictor:
     def get_securities_predictions(self):
         """Loop through tickers and run prediction algorithm."""
         for ticker in self.dataframe.keys():
-            # TODO: Need to iterate through each series in each data frame. Too lazy to do it now
-            self.predictions[ticker]["train"], self.dataframe[ticker]["test"] = self.get_predictions(self.dataframe[ticker])
+            train, test = self.get_predictions(self.dataframe[ticker]["close"])
+            self.predictions[ticker] = dict()
+            self.predictions[ticker]["train"] = train
+            self.dataframe[ticker]["test"] = test
         return self.predictions
 
     def get_predictions(self, data):
