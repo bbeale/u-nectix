@@ -77,7 +77,7 @@ def algo():
                 print("buy!")
                 submit_buy_order(item[0], "buy", "market", "ioc")
 
-    print(".")
+    print("Exiting")
 
 
 def run():
@@ -88,11 +88,34 @@ def run():
 
     # maybe it makes more sense to initialize the alpaca sdk here since multiple classes are callign it
 
-    assets      = AssetSelector(alpaca_api).get_stuff_to_trade_v2()
+    assets      = AssetSelector(alpaca_api, edgar_token=None).get_stuff_to_trade_v2()
     indicators  = Indicators(alpaca_api, assets).get_indicators()
-    edgar       = EdgarInterface(edgar_token, indicators)       # .get_edgar_signals()
+    edgar       = EdgarInterface(edgar_token, indicators).get_edgar_signals()
     tweets      = TwitterInterface(twitter_api, indicators).get_ticker_tweets()
-    sentiments  = Sent(indicators, tweets).get_sentiments()              # indicators=indicators)
+    sentiments  = Sent(indicators, tweets).get_sentiments()
+    predictions = Predictor(indicators).get_securities_predictions()
+
+    # calculate trade decision
+    # use data from object instances
+
+    if trading is True:
+        submit_buy_order("ticker", "buy", "market", "ioc")
+
+
+def run_edgar():
+
+    global alpaca_api, twitter_api, edgar_token
+    # initial trade state -- False means not currently trading anything
+    trading = False
+
+    # maybe it makes more sense to initialize the alpaca sdk here since multiple classes are callign it
+
+    assets      = AssetSelector(alpaca_api, edgar_token=edgar_token).get_assets_with_8k_filings()
+
+    indicators  = Indicators(alpaca_api, assets).get_indicators()
+    edgar       = EdgarInterface(edgar_token, indicators).get_edgar_signals()
+    tweets      = TwitterInterface(twitter_api, indicators).get_ticker_tweets()
+    sentiments  = Sent(indicators, tweets).get_sentiments()
     predictions = Predictor(indicators).get_securities_predictions()
 
     # calculate trade decision
@@ -104,7 +127,8 @@ def run():
 
 def main():
     """Run the algorithm."""
-    run()
+    # run()
+    run_edgar()
 
 
 if __name__ == "__main__":
