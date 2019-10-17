@@ -1,52 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, HashingVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-import xml.etree.ElementTree as ET
-import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
-from statistics import mean
-from spacy import displacy
-import pandas as pd
-import numpy as np
-import configparser
-import matplotlib
+import xml.etree.ElementTree as ET
 import requests
-import spacy
-import nltk
-import json
 import time
-import sys
-import os
 import re
-
-# %matplotlib inline
-
-nlp = spacy.load("en_core_web_lg")
-nltk.download("vader_lexicon")
-config = configparser.ConfigParser()
-
-try:
-    config.read(os.path.relpath("config.ini"))
-except FileExistsError as e:
-    print("File exists error: {}".format(e))
-    sys.exit(1)
-
-
-def compress_filings(filings):
-    store = {}
-    compressed_filings = []
-    for filing in filings:
-        filedAt = filing['filedAt']
-        if filedAt in store and store[filedAt] < 5:
-            compressed_filings.append(filing)
-            store[filedAt] += 1
-        elif filedAt not in store:
-            compressed_filings.append(filing)
-            store[filedAt] = 1
-    return compressed_filings
 
 
 def download_xml(url, tries=1):
@@ -57,7 +15,7 @@ def download_xml(url, tries=1):
     :return:
     """
     try:
-        response = requests.get(url)        # urllib.request.urlopen(url)
+        response = requests.get(url)
     except requests.exceptions.HTTPError as httpe:
         print(httpe, "Something went wrong. Wait for 5 seconds and try again.", tries)
         if tries < 5:
@@ -81,7 +39,6 @@ def download_xml(url, tries=1):
 def calculate_transaction_amount(xml):
     """Calculate the total transaction amount in $ of a giving form 4 in XML.
 
-    # TODO: customize this for 8-K
     :param xml:
     :return:
     """
@@ -141,9 +98,12 @@ def calculate_8k_transaction_amount(xml):
             total_shares = init_shares
 
         else:
-            total_shares -= float(shares)
-
-    percent_traded = (float(total_shares)/float(init_shares))
+            total_shares += float(shares)
+    try:
+        percent_traded = (float(total_shares)/float(init_shares))
+    except TypeError as te:
+        print(te, "- total_shares and init_shares must not be none")
+        percent_traded = None
     return init_shares, total_shares, percent_traded, owner_holds_10_percent
 
 
@@ -170,6 +130,8 @@ def add_non_derivative_transaction_amounts(filings):
 
 def bs_xml_parse(url, tries=1):
     """Version of download_xml using BeautifulSoup. Clearly naming conventions aren't a thing.
+
+    This function is in progress and may never get finished because it isn't a super high priority.
 
     :param url:
     :param tries:
