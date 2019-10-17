@@ -71,8 +71,12 @@ def time_formatter(time_stamp, time_format=None):
     return date.fromtimestamp(time_stamp).strftime(time_format)
 
 
-def bullish_sequence(num1, num2, num3):     # , num4, num5):
-    return num1 >= num2 >= num3         # >= num4 >= num5
+def bullish_sequence(num1, num2, num3):
+    return num1 >= num2 >= num3
+
+
+def long_bullish_sequence(num1, num2, num3, num4, num5):
+    return num1 >= num2 >= num3 >= num4 >= num5
 
 
 def bullish_candlestick_patterns(c1, c2, c3):
