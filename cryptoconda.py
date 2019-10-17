@@ -7,7 +7,7 @@ from src.twitter_interface import TwitterInterface
 from src.sentiment_analysis import SentimentAnalysis as Sent
 from src.predictor import Predictor
 
-from alpaca_functions import (
+from util import (
     time_formatter,
     bullish_sequence,
     submit_buy_order

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from alpaca_functions import time_formatter
+from util import time_formatter
 from lib.edgar import (
     download_xml,
     calculate_transaction_amount,

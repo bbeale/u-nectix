@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from alpaca_functions import time_formatter
+from util import time_formatter
 import configparser
 import nltk
 import sys

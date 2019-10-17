@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from alpaca_functions import bullish_candlestick_patterns, time_formatter
+from util import bullish_candlestick_patterns, time_formatter
 from src.edgar_interface import EdgarInterface
 import pandas as pd
 import json

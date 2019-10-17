@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from alpaca_functions import get_returns, sort_returns
+from util import get_returns, sort_returns
 import tensorflow as tf
 
 
