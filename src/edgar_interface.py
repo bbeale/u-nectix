@@ -70,16 +70,16 @@ class EdgarInterface:
         }
         resp = None
         try:
-            resp = requests.post(self.api, json.dumps(payload), headers={"Content-Type": "application/json; charset=utf-8"})
+            resp = requests.post(self.api, json.dumps(payload), headers={"Content-Type": "application/json; charset=utf-8"}).json()
         except requests.HTTPError as httpe:
             print(httpe, "- Unable to submit API request. Retrying...")
             time.sleep(3)
             try:
-                resp = requests.post(self.api, payload)
+                resp = requests.post(self.api, json.dumps(payload), headers={"Content-Type": "application/json; charset=utf-8"}).json()
             except requests.HTTPError as httpe:
                 print(httpe, "- Unable to submit API request.")
         finally:
-            return resp.json()
+            return resp
 
     def calculate_edgar_signal(self, ticker, from_date, to_date):
         """Calculate edgar signal given a ticker symbol and a date range.

@@ -88,7 +88,7 @@ def run():
 
     # maybe it makes more sense to initialize the alpaca sdk here since multiple classes are callign it
 
-    assets      = AssetSelector(alpaca_api, edgar_token=None).get_stuff_to_trade_v2()
+    assets      = AssetSelector(alpaca_api, edgar_token=None).get_assets_by_candlestick_pattern()
     indicators  = Indicators(alpaca_api, assets).get_indicators()
     edgar       = EdgarInterface(edgar_token, indicators).get_edgar_signals()
     tweets      = TwitterInterface(twitter_api, indicators).get_ticker_tweets()

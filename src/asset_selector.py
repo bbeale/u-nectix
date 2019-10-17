@@ -23,7 +23,7 @@ class AssetSelector:
         if edgar_token is not None:
             self.edgar_token = edgar_token
 
-    def get_stuff_to_trade_v2(self, backdate=None):
+    def get_assets_by_candlestick_pattern(self, backdate=None):
 
         if not backdate or backdate is None:
             backdate = time_formatter(time.time() - (604800 * 13))
@@ -40,8 +40,8 @@ class AssetSelector:
 
         # Filter the assets down to just those on NASDAQ.
         assets = [a for a in active_assets if a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
-        bullish_to_compare = {}
-        bearish_to_compare = {}
+        bullish_to_compare  = dict()
+        bearish_to_compare  = dict()
         for i in assets:
 
             symbol          = i.symbol
@@ -80,7 +80,10 @@ class AssetSelector:
             raise NotImplementedError
 
         if not backdate or backdate is None:
-            backdate = time_formatter(time.time() - 604800, time_format="%Y-%m-%d")
+            # backdate = time_formatter(time.time() - 604800, time_format="%Y-%m-%d")
+
+            # using a longer window only for debugging purposes -- just to make sure I have results quickly
+            backdate = time_formatter(time.time() - (604800 * 26), time_format="%Y-%m-%d")
 
         # Check if our account is restricted from trading.
         if self.account.trading_blocked:
@@ -98,31 +101,57 @@ class AssetSelector:
 
         # Filter the assets down to just those on NASDAQ.
         assets = [a for a in active_assets if a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
-        assets_with_recent_filings = {}
+        assets_with_recent_filings = dict()
 
         print("Going through assets looking for firms with recent SEC filings")
         for i in assets:
-            print("Company:", i.symbol)
 
             symbol          = i.symbol
             start           = backdate
 
             filings         = ei.get_sec_filings(symbol, start, date, form_type="8-K")
 
+            # If none are found, lengthen the lookback window a couple times
+            if filings["total"] is 0:
+                print("No recent filings found for {}. Looking back 2 weeks".format(symbol))
+                start = time_formatter(time.time() - (604800 * 2), time_format="%Y-%m-%d")
+                filings = ei.get_sec_filings(symbol, start, date, form_type="8-K")
+
+            if filings["total"] is 0:
+                print("No filings found. Looking back 4 weeks")
+                start = time_formatter(time.time() - (604800 * 4), time_format="%Y-%m-%d")
+                filings = ei.get_sec_filings(symbol, start, date, form_type="8-K")
+
             if filings["total"] > 0:
-                print("\tAdded:", i.symbol, " symbols:", len(assets_with_recent_filings.keys()))
+                print("\tAdded:", i.symbol, " symbols:", len(assets_with_recent_filings.keys()) + 1)
                 filings = json.dumps(filings)
                 assets_with_recent_filings[symbol] = filings
 
-            if len(assets_with_recent_filings.keys()) > 5:
-                return assets_with_recent_filings
+            if len(assets_with_recent_filings.keys()) >= 5:
+                break
             else:
                 continue
 
-        print("\tDone")
-        if len(assets_with_recent_filings.keys()) > 0:
-            # return what we do have
-            return assets_with_recent_filings
-        else:
-            return None
+        assets_to_trade = dict()
+
+        for i in assets_with_recent_filings.keys():
+            # I think I need my original 13 week window here for consistency with get_assets_by_candlestick_pattern
+            backdate        = time_formatter(time.time() - (604800 * 13))
+
+            symbol          = i.symbol
+            start           = backdate
+            barset          = self.api.get_barset(symbol, "1D", after=start)
+            symbol_bars     = barset[symbol]
+
+            df              = pd.DataFrame()
+            df["time"]      = [bar.t for bar in symbol_bars if bar is not None]
+            df["open"]      = [bar.o for bar in symbol_bars if bar is not None]
+            df["high"]      = [bar.h for bar in symbol_bars if bar is not None]
+            df["low"]       = [bar.l for bar in symbol_bars if bar is not None]
+            df["close"]     = [bar.c for bar in symbol_bars if bar is not None]
+            df["volume"]    = [bar.v for bar in symbol_bars if bar is not None]
+
+            assets_to_trade[symbol] = df
+
+        return assets_to_trade
 
