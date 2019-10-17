@@ -2,9 +2,6 @@
 # -*- coding: utf-8 -*-
 from alpaca_functions import get_returns, sort_returns
 import tensorflow as tf
-import numpy as np
-import pandas as pd
-import configparser
 
 
 class Predictor:
