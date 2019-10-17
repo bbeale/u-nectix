@@ -9,17 +9,11 @@ from src.predictor import Predictor
 
 from alpaca_functions import (
     time_formatter,
-    calculate_indicators_v2 as calculate_indicators,
-    get_predictions,
-    get_sentiment,
-    bullish_candlestick_patterns,
-    get_stuff_to_trade_v2,
     bullish_sequence,
     submit_buy_order
 )
 
 import alpaca_trade_api as tradeapi
-import numpy as np
 import configparser
 import twitter
 import time
@@ -52,35 +46,7 @@ twitter_api = twitter.Api(
 )
 
 
-def algo():
-
-    candlestickPatternStart = time_formatter(time.time() - 604800)
-
-    today = time_formatter(time.time())
-    start = time_formatter(time.time() - (604800 * 13))
-
-    # get ticker to trade
-    raw_data = get_stuff_to_trade_v2(candlestickPatternStart)
-
-    securities = dict()
-
-    for item in raw_data.keys():
-        indicators = calculate_indicators(item, start)
-
-        sentiment = get_sentiment(item)
-        if sentiment == "positive":
-            securities[item] = indicators
-
-    for item in securities.items():
-        if bullish_sequence(item[1]["macd"].iloc[-3], item[1]["macd"].iloc[-2], item[1]["macd"].iloc[-1]):
-            if item[1]["macd"].iloc[-1] >= item[1]["signal"].iloc[-1]:
-                print("buy!")
-                submit_buy_order(item[0], "buy", "market", "ioc")
-
-    print("Exiting")
-
-
-def run():
+def algo_candlestick():
 
     global alpaca_api, twitter_api
     # initial trade state -- False means not currently trading anything
@@ -102,7 +68,7 @@ def run():
         submit_buy_order("ticker", "buy", "market", "ioc")
 
 
-def run_edgar():
+def algo_edgar():
 
     global alpaca_api, twitter_api, edgar_token
     # initial trade state -- False means not currently trading anything
@@ -127,8 +93,8 @@ def run_edgar():
 
 def main():
     """Run the algorithm."""
-    # run()
-    run_edgar()
+    # algo_candlestick()
+    algo_edgar()
 
 
 if __name__ == "__main__":
