@@ -24,14 +24,6 @@ class SentimentAnalysis:
     def get_sentiment(self, text):
         """Given a text block, return a sentiment score based.
 
-        TODO: Make this look up tweets by date range vs relying on result_type="recent"
-
-        ALSO TODO: Move this to SentimentAnalysis class
-            - this class should only interface with Twitter
-            - sentiment analysis should not care where the text comes from
-            - sentiment analysis should occur whether given tweets or other sources
-            - prep tweet results for sent. analysis here but don't do the actual analysis
-
         :param text:
         :return:
         """
