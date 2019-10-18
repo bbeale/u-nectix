@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from datetime import date
 import alpaca_trade_api as tradeapi
-import spacy
-import nltk
-import tensorflow as tf
+import pandas as pd
 import numpy as np
 import configparser
-import pprint
 import sys
 import os
 
@@ -149,3 +145,26 @@ def submit_buy_order(ticker, transaction_side, ttype, time_in_force):
     """
     global api
     return api.submit_order(ticker, transaction_side, ttype, time_in_force)
+
+
+def set_candlestick_df(bars):
+    """Given a collection of candlestick bars, return a dataframe.
+
+    Dataframe should contain keys:
+        - time, open, high, low, close, volume
+
+    :param bars:
+    :return:
+    """
+    if not bars or bars is None:
+        raise ValueError("Bars cannot be none")
+
+    data = pd.DataFrame()
+    data["time"]    = [bar.t for bar in bars if bar is not None]
+    data["open"]    = [bar.o for bar in bars if bar is not None]
+    data["high"]    = [bar.h for bar in bars if bar is not None]
+    data["low"]     = [bar.l for bar in bars if bar is not None]
+    data["close"]   = [bar.c for bar in bars if bar is not None]
+    data["volume"]  = [bar.v for bar in bars if bar is not None]
+
+    return data
