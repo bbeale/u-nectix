@@ -6,17 +6,10 @@ from src.edgar_interface import EdgarInterface
 from src.twitter_interface import TwitterInterface
 from src.sentiment_analysis import SentimentAnalysis as Sent
 from src.predictor import Predictor
-
-from util import (
-    time_formatter,
-    bullish_sequence,
-    submit_buy_order
-)
-
+from util import submit_buy_order
 import alpaca_trade_api as tradeapi
 import configparser
 import twitter
-import time
 import sys
 import os
 
@@ -45,6 +38,12 @@ twitter_api = twitter.Api(
     config["twitter"]["ACCESS_TOKEN_SECRET"]
 )
 
+"""
+    Right now, each of these three entry points below are using either different indicator or asset choosing strategies
+    
+    Run an algorithm by calling the function in main() 
+"""
+
 
 def algo_candlestick():
 
@@ -61,7 +60,7 @@ def algo_candlestick():
     sentiments  = Sent(indicators, tweets).get_sentiments()
     predictions = Predictor(indicators).get_securities_predictions()
 
-    # calculate trade decision
+    # calculate trade decision # TODO
     # use data from object instances
 
     if trading is True:
@@ -84,8 +83,26 @@ def algo_edgar():
     sentiments  = Sent(indicators, tweets).get_sentiments()
     predictions = Predictor(indicators).get_securities_predictions()
 
-    # calculate trade decision
+    # calculate trade decision # TODO
     # use data from object instances
+
+    if trading is True:
+        submit_buy_order("ticker", "buy", "market", "ioc")
+
+
+def algo_alt_indicators():
+
+    global alpaca_api, twitter_api, edgar_token
+    # initial trade state -- False means not currently trading anything
+    trading = False
+
+    assets      = AssetSelector(alpaca_api, edgar_token=None).get_assets_by_candlestick_pattern()
+    indicators  = Indicators(alpaca_api, assets).g3t_m0ar_indicat0rszz()
+    tweets      = TwitterInterface(twitter_api, indicators).get_ticker_tweets()
+    sentiments  = Sent(indicators, tweets).get_sentiments()
+    predictions = Predictor(indicators).get_securities_predictions()
+
+    # trade decision here # TODO
 
     if trading is True:
         submit_buy_order("ticker", "buy", "market", "ioc")
@@ -94,7 +111,8 @@ def algo_edgar():
 def main():
     """Run the algorithm."""
     # algo_candlestick()
-    algo_edgar()
+    # algo_edgar()
+    algo_alt_indicators()
 
 
 if __name__ == "__main__":
