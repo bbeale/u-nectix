@@ -18,7 +18,7 @@ class Predictor:
             train, test = self.get_predictions(self.dataframe[ticker]["close"])
             self.predictions[ticker] = dict()
             self.predictions[ticker]["train"] = train
-            self.dataframe[ticker]["test"] = test
+            self.predictions[ticker]["test"] = test
         return self.predictions
 
     def get_predictions(self, data):
