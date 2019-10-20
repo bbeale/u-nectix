@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from util import bullish_candlestick_patterns, time_formatter
+from util import bullish_candlestick_patterns, time_formatter, num_bars
 from src.edgar_interface import EdgarInterface
 import pandas as pd
 import json
@@ -47,6 +47,11 @@ class AssetSelector:
             symbol          = i.symbol
             start           = backdate
             barset          = self.api.get_barset(symbol, "1D", after=start)
+
+            # if len(barset[symbol]) < 64:
+            if num_bars(barset[symbol], 64) is False:
+                continue
+
             symbol_bars     = barset[symbol]
 
             df              = pd.DataFrame()
@@ -141,6 +146,11 @@ class AssetSelector:
             symbol          = i.symbol
             start           = backdate
             barset          = self.api.get_barset(symbol, "1D", after=start)
+
+            # if len(barset[symbol]) < 64:
+            if num_bars(barset[symbol], 64) is False:
+                continue
+
             symbol_bars     = barset[symbol]
 
             df              = pd.DataFrame()
