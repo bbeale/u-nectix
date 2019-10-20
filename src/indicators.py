@@ -29,6 +29,12 @@ class Indicators:
             self.dataframe[ticker] = self.get_vzo_dmi_apz(ticker)
         return self.dataframe
 
+    def get_cluster(self):
+        """Loop through tickers and append indicators to that ticker's dataframe"""
+        for ticker in self.dataframe.keys():
+            self.dataframe[ticker] = self.cluster_prep(ticker)
+        return self.dataframe
+
     def get_bars(self, ticker, backdate=None):
         """Get bars for a ticker symbol
 
@@ -151,5 +157,88 @@ class Indicators:
         vwmacd      = TA.VW_MACD(data)
         _vmacds      = vwmacd["MACD"]
         _vsignals    = vwmacd["SIGNAL"]
+
+        data["ticker"]  = ticker
+        data["macd"]    = _macds
+        data["signal"]  = _signals
+        data["vwmacd"]    = _vmacds
+        data["vwsignal"]  = _vsignals
+
+        return data
+
+    def cluster_prep(self, ticker, backdate=None):
+        """Compare different MACD indicators."""
+        if not ticker or ticker is None:
+            raise ValueError("Invalid ticker value")
+
+        if not backdate or backdate is None:
+            backdate = time_formatter(time.time() - (604800 * 13))
+
+        bars = self.get_bars(ticker, backdate)
+        data = set_candlestick_df(bars)
+
+        # get Bollinger bands
+        bbands = TA.BBANDS(data)
+        _bb_up = bbands["BB_UPPER"]
+        _bb_mid = bbands["BB_MIDDLE"]
+        _bb_low = bbands["BB_LOWER"]
+
+        # get MACD
+        macd = TA.MACD(data)
+        _macds = macd["MACD"]
+        _signals = macd["SIGNAL"]
+
+        # get VW_MACD
+        vwmacd      = TA.VW_MACD(data)
+        _vmacds      = vwmacd["MACD"]
+        _vsignals    = vwmacd["SIGNAL"]
+
+        # get money flow index
+        mfi = TA.MFI(data)
+
+        # get stochastic oscillator
+        stoch = TA.STOCH(data)
+
+        # get VZO   - bullish trend range 5-40%; oversold - -40%; extremely oversold -60%
+        vzo = TA.VZO(data)
+
+        # get APZ   - volatility indicator -- might be useful in sentiment comparison
+        apz = TA.APZ(data)
+
+        # get DMI   - buy sign when + line crosses over - line
+        dmi = TA.DMI(data)
+        # ¯\_(ツ)_/¯ seems to be a bug in finta DMI implementation - returning lists of NaN
+        # TODO: investigate - https://github.com/bbeale/finta
+        # Seems to be appending the values I am expecting it to return directly to my dataframe instead of returning them.
+        # Hmm...
+        # data["dmi_p"]       = dmi["DMp"]
+        # data["dmi_m"]       = dmi["DMm"]
+
+        data["ticker"]          = ticker
+        data["bb_up"]           = _bb_up
+        data["bb_mid"]          = _bb_mid
+        data["bb_low"]          = _bb_low
+        data["macd"]            = _macds
+        data["signal"]          = _signals
+        data["vwmacd"]          = _vmacds
+        data["vwsignal"]        = _vsignals
+        data["mfi"]             = mfi
+        data["stoch"]           = stoch
+        data["vzo"]             = vzo
+        data["apz_u"]           = apz["UPPER"]
+        data["apz_l"]           = apz["LOWER"]
+        # Percent changes
+        data["bb_up_ptc"]       = _bb_up.pct_change()
+        data["bb_mid_ptc"]      = _bb_mid.pct_change()
+        data["bb_low_ptc"]      = _bb_low.pct_change()
+        data["macd_ptc"]        = _macds.pct_change()
+        data["signal_ptc"]      = _signals.pct_change()
+        data["vwmacd_ptc"]      = _vmacds.pct_change()
+        data["vwsignal_ptc"]    = _vsignals.pct_change()
+        data["mfi_ptc"]         = mfi.pct_change()
+        data["stoch_ptc"]       = stoch.pct_change()
+        data["vzo_ptc"]         = vzo.pct_change()
+        data["apz_u_ptc"]       = apz["UPPER"].pct_change()
+        data["apz_l_ptc"]       = apz["LOWER"].pct_change()
 
         return data
