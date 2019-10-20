@@ -168,3 +168,14 @@ def set_candlestick_df(bars):
     data["volume"]  = [bar.v for bar in bars if bar is not None]
 
     return data
+
+def num_bars(barset, length):
+    """Check the bar count to ensure uniform length for dataframe.
+
+    Return True if the number of bars is equal to the target length, otherwise False.
+
+    :param barset: a collection of bars (time + ohlcv format)
+    :param length: target length to ensure
+    :return boolean:
+    """
+    return len(barset) == length
