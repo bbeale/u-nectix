@@ -10,7 +10,7 @@ def run(alpaca_api):
     # initial trade state
     trading_symbol  = None
     trading         = False
-    assets          = AssetSelector(alpaca_api, edgar_token=None).get_assets_by_candlestick_pattern()
+    assets          = AssetSelector(alpaca_api, edgar_token=None).get_assets_bullish_candlestick()
     indicators      = Indicators(alpaca_api, assets).get_cluster()
 
     # trade decision here
