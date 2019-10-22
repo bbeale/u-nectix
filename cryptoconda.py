@@ -23,6 +23,8 @@ alpaca_api = tradeapi.REST(
     api_version = config["alpaca"]["VERSION"]
 )
 
+trading_account = alpaca_api.get_account()
+
 edgar_token = config["edgar"]["TOKEN"]
 
 twitter_api = twitter.Api(
@@ -34,6 +36,15 @@ twitter_api = twitter.Api(
 
 
 def main():
+
+    # is our account restricted from trading?
+    if trading_account.trading_blocked:
+        print("Account is currently restricted from trading.")
+        sys.exit(-1)
+
+    # how much money can we use to open new positions?
+    print("${} is available as buying power.".format(trading_account.buying_power))
+
     """Run the algorithm."""
     candlestick.run(alpaca_api)
     # edgar.run(alpaca_api, twitter_api, edgar_token)
