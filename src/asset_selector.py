@@ -15,11 +15,16 @@ class AssetSelector:
         if not alpaca_api_interface or alpaca_api_interface is None:
             raise ValueError("Alpaca API interface instance required")
 
-        self.api            = alpaca_api_interface
-        self.edgar_token    = None
+        self.api                = alpaca_api_interface
+        self.edgar_token        = None
 
         if edgar_token is not None:
             self.edgar_token = edgar_token
+
+        self.raw_assets         = None
+        self.tradeable_assets   = None
+        self.bulls              = None
+        self.bears              = None
 
     def get_assets(self):
         """Get assets from Alpaca API.
@@ -38,10 +43,9 @@ class AssetSelector:
                 print(httpe, "- Unable to get assets.")
                 raise httpe
         finally:
-            return result
+            self.raw_assets = result
 
-    @classmethod
-    def extract_tradeable_assets(cls, asset_list):
+    def extract_tradeable_assets(self, asset_list):
         """Extract tradeable assets from API results.
 
         :param asset_list:
@@ -49,7 +53,7 @@ class AssetSelector:
         """
         if not asset_list or asset_list is None or len(asset_list) is 0:
             raise ValueError
-        return [a for a in asset_list if a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
+        self.tradeable_assets = [a for a in asset_list if a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
 
     def get_barset(self, symbol, period, starting_time):
         """Get a set of bars from the API given a symbol, a time period and a starting time.
@@ -123,7 +127,7 @@ class AssetSelector:
 
         return candle
 
-    def evaluate_assets(self, asset_list, backdate, poolsize=5):
+    def evaluate_assets(self, asset_list, backdate=None, poolsize=5):
         """Given a list of assets, evaluate which ones are bullish or bearish and return a sample of each.
 
         :param asset_list:
@@ -135,13 +139,13 @@ class AssetSelector:
             raise ValueError
 
         if not backdate or backdate is None:
-            raise ValueError
+            backdate = time_formatter(time.time() - (604800 * 13))
 
         if not poolsize or poolsize is None or poolsize is 0:
             poolsize = 5
 
-        _bulls = dict()
-        _bears = dict()
+        # _bulls = dict()
+        # _bears = dict()
 
         for i in asset_list:
             symbol  = i.symbol
@@ -157,38 +161,41 @@ class AssetSelector:
             # evaluate candlestick direction
             candle_pattern = self.candle_pattern_direction(df)
 
-            if candle_pattern is "bull" and len(_bulls) < poolsize:
-                _bulls[symbol] = df
+            if candle_pattern is "bull" and len(self.bulls) < poolsize:
+                self.bulls[symbol] = df
 
-            if candle_pattern is "bear" and len(_bears) < poolsize:
-                _bears[symbol] = df
+            if candle_pattern is "bear" and len(self.bears) < poolsize:
+                self.bears[symbol] = df
 
-            if len(_bulls.keys()) == poolsize and len(_bears.keys()) == poolsize:
-                return _bulls, _bears
+            if len(self.bulls.keys()) == poolsize and len(self.bears.keys()) == poolsize:
+                return
 
     def get_assets_bullish_candlestick(self, backdate=None):
 
-        if not backdate or backdate is None:
-            backdate = time_formatter(time.time() - (604800 * 13))
+        # if not backdate or backdate is None:
+        #     backdate = time_formatter(time.time() - (604800 * 13))
 
         # get active, tradeable assets
-        active_assets   = self.get_assets()
-        assets          = self.extract_tradeable_assets(active_assets)
-        bulls           = self.evaluate_assets(assets, backdate)[0]
+        # active_assets   = self.get_assets()
+        # assets          = self.extract_tradeable_assets(active_assets)
 
-        return bulls
+        # bulls           = self.evaluate_assets(self.tradeable_assets, backdate)[0]
+
+        # return bulls
+        return self.bulls
 
     def get_assets_bearish_candlestick(self, backdate=None):
 
-        if not backdate or backdate is None:
-            backdate = time_formatter(time.time() - (604800 * 13))
+        # if not backdate or backdate is None:
+        #     backdate = time_formatter(time.time() - (604800 * 13))
 
-        # get active, tradeable assets
-        active_assets   = self.get_assets()
-        assets          = self.extract_tradeable_assets(active_assets)
-        bears           = self.evaluate_assets(assets, backdate)[1]
-
-        return bears
+        # # get active, tradeable assets
+        # active_assets   = self.get_assets()
+        # assets          = self.extract_tradeable_assets(active_assets)
+        # bears           = self.evaluate_assets(assets, backdate)[1]
+        #
+        # return bears
+        return self.bears
 
     def get_assets_with_8k_filings(self, backdate=None):
 
