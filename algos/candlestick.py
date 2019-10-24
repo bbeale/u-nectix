@@ -35,6 +35,7 @@ def run(alpaca_api):
 
     if trading is True:
         # decide how much to buy # TODO
+        quant = 10
 
         # then submit
-        submit_buy_order(trading_symbol, "buy", "market", "ioc")
+        submit_buy_order(trading_symbol, quant, "buy", "market", time_in_force="ioc")

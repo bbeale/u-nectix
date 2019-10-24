@@ -134,17 +134,18 @@ def sort_returns(rets, num):
     return np.array(ins), np.array(outs)
 
 
-def submit_buy_order(ticker, transaction_side, ttype, time_in_force):
+def submit_buy_order(ticker, qty, transaction_side, ttype, time_in_force):
     """
 
     :param ticker:
+    :param qty:
     :param transaction_side:
     :param ttype:
     :param time_in_force:
     :return:
     """
     global api
-    return api.submit_order(ticker, transaction_side, ttype, time_in_force)
+    return api.submit_order(ticker, qty, transaction_side, ttype, time_in_force)
 
 
 def set_candlestick_df(bars):
