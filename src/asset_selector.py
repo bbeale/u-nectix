@@ -4,27 +4,43 @@ from util import bullish_candlestick_patterns, time_formatter, num_bars
 from src.edgar_interface import EdgarInterface
 from requests.exceptions import HTTPError
 import pandas as pd
+import inspect
 import json
 import time
 
 
 class AssetSelector:
 
-    def __init__(self, alpaca_api_interface, edgar_token=None):
+    def __init__(self, alpaca_api_interface, backdate=None, edgar_token=None):
 
         if not alpaca_api_interface or alpaca_api_interface is None:
-            raise ValueError("Alpaca API interface instance required")
+            raise ValueError("Alpaca API interface instance required.")
+
+        if not backdate or backdate is None:
+            backdate = time_formatter(time.time() - (604800 * 13))
 
         self.api                = alpaca_api_interface
+        self.backdate           = backdate
         self.edgar_token        = None
 
         if edgar_token is not None:
             self.edgar_token = edgar_token
 
+        self.ei                 = EdgarInterface(self.edgar_token)
+
         self.raw_assets         = None
         self.tradeable_assets   = None
-        self.bulls              = None
-        self.bears              = None
+        self.bulls              = dict()
+        self.bears              = dict()
+        self.recent_filings     = dict()
+        self.assets_by_filing   = dict()
+
+        self.populate()
+
+    def populate(self):
+
+        self.get_assets()
+        self.extract_tradeable_assets(self.raw_assets)
 
     def get_assets(self):
         """Get assets from Alpaca API.
@@ -35,7 +51,7 @@ class AssetSelector:
         try:
             result = self.api.list_assets(status="active")
         except HTTPError as httpe:
-            print(httpe, "- Unable to get assets. Retrying...")
+            print(httpe, "- Unable to get assets. Retrying in 3s...")
             time.sleep(3)
             try:
                 result = self.api.list_assets(status="active")
@@ -67,12 +83,12 @@ class AssetSelector:
         try:
             result = self.api.get_barset(symbol, period, after=starting_time)
         except HTTPError as httpe:
-            print(httpe, "- Unable to get barset. Retrying...")
+            print(httpe, "- Unable to get barset for {}. Retrying in 3s...".format(symbol))
             time.sleep(3)
             try:
                 result = self.api.get_barset(symbol, period, after=starting_time)
             except HTTPError as httpe:
-                print(httpe, "- Unable to get barset.")
+                print(httpe, "- Unable to get barset or barset is None.")
                 raise httpe
         finally:
             return result
@@ -86,10 +102,10 @@ class AssetSelector:
         :return:
         """
         if not bar_object or bar_object is None:
-            raise ValueError
+            raise ValueError("Bar object cannot be None.")
 
         if not symbol or symbol is None:
-            raise ValueError
+            raise ValueError("Must give a valid ticker symbol.")
 
         bars = bar_object[symbol]
         df = pd.DataFrame()
@@ -114,7 +130,7 @@ class AssetSelector:
         :return:
         """
         if dataframe is None:
-            raise ValueError
+            raise ValueError("Dataframe cannot be None.")
 
         pattern = bullish_candlestick_patterns(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
         candle = None
@@ -127,78 +143,110 @@ class AssetSelector:
 
         return candle
 
-    def evaluate_assets(self, asset_list, backdate=None, poolsize=5):
+    def evaluate_candlesticks(self, asset_list, fname, barcount, poolsize=5):
         """Given a list of assets, evaluate which ones are bullish or bearish and return a sample of each.
 
         :param asset_list:
-        :param backdate:
+        :param fname:
+        :param barcount:
         :param poolsize:
         :return:
         """
         if not asset_list or asset_list is None:
-            raise ValueError
+            raise ValueError("Asset list cannot be None.")
 
-        if not backdate or backdate is None:
-            backdate = time_formatter(time.time() - (604800 * 13))
+        if not fname or fname is None:
+            raise ValueError("Name of calling entity required.")
+
+        if not barcount or barcount is None:
+            barcount = 64
 
         if not poolsize or poolsize is None or poolsize is 0:
             poolsize = 5
 
-        # _bulls = dict()
-        # _bears = dict()
+        calling_fn = fname
+        results = dict()
 
         for i in asset_list:
-            symbol  = i.symbol
-            print("ticker:", symbol)
-            start   = backdate
-            barset  = self.get_barset(symbol, "1D", start)
-
-            if num_bars(barset[symbol], 63) is False:
-                continue
-
-            df = self.extract_bar_data(barset, symbol)
-
-            # evaluate candlestick direction
-            candle_pattern = self.candle_pattern_direction(df)
-
-            if candle_pattern is "bull" and len(self.bulls) < poolsize:
-                self.bulls[symbol] = df
-
-            if candle_pattern is "bear" and len(self.bears) < poolsize:
-                self.bears[symbol] = df
-
-            if len(self.bulls.keys()) == poolsize and len(self.bears.keys()) == poolsize:
+            if len(results.keys()) == poolsize:
+                print(results.keys())
                 return
 
-    def get_assets_bullish_candlestick(self, backdate=None):
+            try:
+                df, eval_result = self.evaluate_candlestick(i, barcount)
+            except DataframeException:
+                continue
+            except CandlestickException:
+                continue
+            else:
+                if eval_result in calling_fn and len(results.keys()) < poolsize:
+                    results[i.symbol] = df
 
-        # if not backdate or backdate is None:
-        #     backdate = time_formatter(time.time() - (604800 * 13))
+                    print("Ticker: {}\nPoolsize: {}\nResult Length: {}".format(
+                        i.symbol, poolsize, len(results.keys())))
 
-        # get active, tradeable assets
-        # active_assets   = self.get_assets()
-        # assets          = self.extract_tradeable_assets(active_assets)
+    def evaluate_candlestick(self, asset, barcount):
+        """Return the candlestick pattern and dataframe of an asset if a bullish or bearish pattern is detected among the last three closing prices.
 
-        # bulls           = self.evaluate_assets(self.tradeable_assets, backdate)[0]
+            Bullish patterns: hammer, inverseHammer
+            Bearish patterns: bullishEngulfing, piercingLine, morningStar, threeWhiteSoldiers
+
+        :param asset:
+        :param barcount:
+        :return:
+        """
+        if not asset or asset is None:
+            raise ValueError("Unable to evaluate a None asset.")
+
+        barset = self.get_barset(asset.symbol, "1D", self.backdate)
+        if barset is None:
+            raise DataframeException("Invalid barset -- cannot be None.")
+
+        if num_bars(barset[asset.symbol], barcount) is False:
+            raise DataframeException("Insufficient data.")
+
+        df = self.extract_bar_data(barset, asset.symbol)
+
+        # evaluate candlestick direction
+        candle_pattern = self.candle_pattern_direction(df)
+        if candle_pattern is not None:
+            return df, candle_pattern
+        else:
+            raise CandlestickException("Pattern not detected.")
+
+    def bullish_candlesticks(self, barcount=64, poolsize=5):
+        """Return assets with a bullish pattern of closing prices over a given period.
+
+        :param barcount:
+        :param poolsize:
+        :return:
+        """
+        self.evaluate_candlesticks(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
 
         # return bulls
         return self.bulls
 
-    def get_assets_bearish_candlestick(self, backdate=None):
+    def bearish_candlesticks(self, barcount=64, poolsize=5):
+        """Return assets with a bearish pattern of closing prices over a given period.
 
-        # if not backdate or backdate is None:
-        #     backdate = time_formatter(time.time() - (604800 * 13))
+        :param barcount:
+        :param poolsize:
+        :return:
+        """
+        self.evaluate_candlesticks(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
 
-        # # get active, tradeable assets
-        # active_assets   = self.get_assets()
-        # assets          = self.extract_tradeable_assets(active_assets)
-        # bears           = self.evaluate_assets(assets, backdate)[1]
-        #
         # return bears
         return self.bears
 
-    def get_assets_with_8k_filings(self, backdate=None):
+    def sec_filings(self, barcount=64, poolsize=5, form_type="8-K", backdate=None):
+        """Return tradeable asets with recent SEC filings.
 
+        :param barcount:
+        :param poolsize:
+        :param form_type:
+        :param backdate:
+        :return:
+        """
         if not self.edgar_token or self.edgar_token is None:
             raise NotImplementedError
 
@@ -207,54 +255,78 @@ class AssetSelector:
             # using a longer window only for debugging purposes -- just to make sure I have results quickly
             backdate = time_formatter(time.time() - (604800 * 26), time_format="%Y-%m-%d")
 
-        date    = time_formatter(time.time(), time_format="%Y-%m-%d")
-        ei      = EdgarInterface(self.edgar_token)
+        date            = time_formatter(time.time(), time_format="%Y-%m-%d")
 
         # Filter the assets down to just those on NASDAQ.
         active_assets   = self.get_assets()
         assets          = self.extract_tradeable_assets(active_assets)
-        recent_filings  = dict()
 
         print("Going through assets looking for firms with recent SEC filings")
         for i in assets:
 
-            symbol      = i.symbol
-            start       = backdate
-            filings     = ei.get_sec_filings(symbol, start, date, form_type="8-K")
+            self.get_filings(i, backdate=backdate, date=date, form_type=form_type)
 
-            # If none are found, lengthen the lookback window a couple times
-            if filings["total"] is 0:
-                print("No recent filings found for {}. Looking back 2 weeks".format(symbol))
-                start = time_formatter(time.time() - (604800 * 2), time_format="%Y-%m-%d")
-                filings = ei.get_sec_filings(symbol, start, date, form_type="8-K")
-
-            if filings["total"] is 0:
-                print("No filings found. Looking back 4 weeks")
-                start = time_formatter(time.time() - (604800 * 4), time_format="%Y-%m-%d")
-                filings = ei.get_sec_filings(symbol, start, date, form_type="8-K")
-
-            if filings["total"] > 0:
-                print("\tAdded:", i.symbol, " symbols:", len(recent_filings.keys()) + 1)
-                filings = json.dumps(filings)
-                recent_filings[symbol] = filings
-
-            if len(recent_filings.keys()) >= 5:
+            if len(self.recent_filings.keys()) >= poolsize:
                 break
             else:
                 continue
 
-        assets_to_trade = dict()
+        self.tradeable_assets_by_filings(barcount)
 
-        for i in recent_filings.keys():
+        return self.assets_by_filing
+
+    def get_filings(self, asset, backdate, date, form_type="8-K"):
+        """Given a trading entity, get SEC filings in the date range.
+
+        :param asset:
+        :param backdate:
+        :param date:
+        :param form_type:
+        :return:
+        """
+        filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
+
+        # If none are found, lengthen the lookback window a couple times
+        if filings["total"] is 0:
+            print("No recent filings found for {}. Looking back 2 weeks".format(asset.symbol))
+            backdate = time_formatter(time.time() - (604800 * 2), time_format="%Y-%m-%d")
+            filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
+
+        if filings["total"] is 0:
+            print("No filings found. Looking back 4 weeks")
+            backdate = time_formatter(time.time() - (604800 * 4), time_format="%Y-%m-%d")
+            filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
+
+        if filings["total"] > 0:
+            print("\tAdded:", asset.symbol, " symbols:", len(self.recent_filings.keys()) + 1)
+            filings = json.dumps(filings)
+            self.recent_filings[asset.symbol] = filings
+
+    def tradeable_assets_by_filings(self, barcount=64):
+        """Populate tradeable assets based on discovered SEC filings.
+
+        :return:
+        """
+        for i in self.recent_filings.keys():
             # I think I need my original 13 week window here for consistency with get_assets_by_candlestick_pattern
             backdate    = time_formatter(time.time() - (604800 * 13))
-            symbol      = i.symbol
-            start       = backdate
-            barset      = self.get_barset(symbol, "1D", start)
 
-            if num_bars(barset[symbol], 64) is False:
+            barset      = self.get_barset(i.symbol, "1D", backdate)
+
+            if num_bars(barset[i.symbol], barcount) is False:
                 continue
 
-            df = self.extract_bar_data(barset, symbol)
-            assets_to_trade[symbol] = df
-        return assets_to_trade
+            df = self.extract_bar_data(barset, i.symbol)
+            self.assets_by_filing[i.symbol] = df
+
+
+class AssetException(Exception):
+    pass
+
+
+class CandlestickException(AssetException):
+    pass
+
+
+class DataframeException(AssetException):
+    pass
