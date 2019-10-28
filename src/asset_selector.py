@@ -25,8 +25,7 @@ class AssetSelector:
 
         if edgar_token is not None:
             self.edgar_token = edgar_token
-
-        self.ei                 = EdgarInterface(self.edgar_token)
+            self.ei = EdgarInterface(self.edgar_token)
 
         self.raw_assets         = None
         self.tradeable_assets   = None
