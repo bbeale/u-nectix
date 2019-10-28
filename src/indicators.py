@@ -202,6 +202,9 @@ class Indicators:
         # get VZO   - bullish trend range 5-40%; oversold - -40%; extremely oversold -60%
         vzo = TA.VZO(data)
 
+        # get ADX   - trending if > 20; > 40 is strong trend; > 50 is very strongtrend
+        adx = TA.ADX(data)
+
         # get APZ   - volatility indicator -- might be useful in sentiment comparison
         apz = TA.APZ(data)
 
@@ -225,6 +228,7 @@ class Indicators:
         data["mfi"]             = mfi
         data["stoch"]           = stoch
         data["vzo"]             = vzo
+        data["adx"]             = adx
         data["apz_u"]           = apz["UPPER"]
         data["apz_l"]           = apz["LOWER"]
         # Percent changes
@@ -238,6 +242,7 @@ class Indicators:
         data["mfi_ptc"]         = mfi.pct_change()
         data["stoch_ptc"]       = stoch.pct_change()
         data["vzo_ptc"]         = vzo.pct_change()
+        data["adx_ptc"]         = adx.pct_change()
         data["apz_u_ptc"]       = apz["UPPER"].pct_change()
         data["apz_l_ptc"]       = apz["LOWER"].pct_change()
 

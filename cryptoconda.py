@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from algos import candlestick, edgar, simple_candlestick
+from algos import bullish_candlestick, bearish_candlestick, edgar, simple_candlestick
 import alpaca_trade_api as tradeapi
 import configparser
 import twitter
@@ -46,7 +46,8 @@ def main():
     print("${} is available as buying power.".format(trading_account.buying_power))
 
     """Run the algorithm."""
-    candlestick.run(alpaca_api)
+    # bullish_candlestick.run(alpaca_api)
+    bearish_candlestick.run(alpaca_api)
     # edgar.run(alpaca_api, twitter_api, edgar_token)
     # simple_candlestick.run(alpaca_api)
 

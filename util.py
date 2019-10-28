@@ -179,4 +179,14 @@ def num_bars(barset, length):
     :param length: target length to ensure
     :return boolean:
     """
-    return len(barset) == length
+    res = False
+    try:
+        res = len(barset) == length
+    except ValueError:
+        try:
+            # Sometimes the dataframe len is a day short....
+            res = len(barset) == length - 1
+        except ValueError:
+            raise ValueError
+    finally:
+        return res
