@@ -10,7 +10,8 @@ def run(alpaca_api):
     # initial trade state
     trading_symbol  = None
     trading         = False
-    assets          = AssetSelector(alpaca_api, edgar_token=None).get_assets_bullish_candlestick()
+    # assets          = AssetSelector(alpaca_api, edgar_token=None).bullish_candlesticks()
+    assets          = AssetSelector(alpaca_api, edgar_token=None).bearish_candlesticks()
     indicators      = Indicators(alpaca_api, assets).get_cluster()
 
     # trade decision here
@@ -33,6 +34,9 @@ def run(alpaca_api):
         if trading_symbol is not None:
             break
 
+    # debugging line that forces the trade to not be made
+    print("Trading is True: ", trading is True)
+    trading = False
     if trading is True:
         # decide how much to buy # TODO
 
