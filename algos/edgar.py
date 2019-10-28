@@ -14,7 +14,7 @@ def run(alpaca_api, twitter_api, edgar_token):
     # initial trade state
     trading         = False
     trading_symbol  = None
-    assets          = AssetSelector(alpaca_api, edgar_token=edgar_token).get_assets_with_8k_filings()
+    assets          = AssetSelector(alpaca_api, edgar_token=edgar_token).sec_filings(64, 20)
     indicators      = Indicators(alpaca_api, assets).get_indicators()
     edgar           = EdgarInterface(edgar_token, indicators).get_edgar_signals()
 
