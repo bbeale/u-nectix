@@ -20,19 +20,34 @@ class Indicators:
     def get_indicators(self):
         """Loop through tickers and append indicators to that ticker's dataframe"""
         for ticker in self.dataframe.keys():
-            self.dataframe[ticker] = self.get_macd_mfi_stoch(ticker)
+            try:
+                self.dataframe[ticker] = self.get_macd_mfi_stoch(ticker)
+            except IndicatorException:
+                raise IndicatorException
+            else:
+                continue
         return self.dataframe
 
     def g3t_m0ar_indicat0rszz(self):
         """Loop through tickers and append indicators to that ticker's dataframe"""
         for ticker in self.dataframe.keys():
-            self.dataframe[ticker] = self.get_vzo_dmi_apz(ticker)
+            try:
+                self.dataframe[ticker] = self.get_vzo_dmi_apz(ticker)
+            except IndicatorException:
+                raise IndicatorException
+            else:
+                continue
         return self.dataframe
 
     def get_cluster(self):
         """Loop through tickers and append indicators to that ticker's dataframe"""
         for ticker in self.dataframe.keys():
-            self.dataframe[ticker] = self.cluster_prep(ticker)
+            try:
+                self.dataframe[ticker] = self.cluster_prep(ticker)
+            except IndicatorException:
+                raise IndicatorException
+            else:
+                continue
         return self.dataframe
 
     def get_bars(self, ticker, backdate=None):
@@ -60,6 +75,96 @@ class Indicators:
         finally:
             return bars
 
+    def get_macd(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.MACD(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
+    def get_mfi(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.MFI(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
+    def get_stoch(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.STOCH(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
+    def get_vzo(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.VZO(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
+    def get_dmi(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.DMI(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
+    def get_apz(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.APZ(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
+    def get_vwmacd(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.VW_MACD(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
+    def get_bbands(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.BBANDS(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
+    def get_adx(self, data):
+
+        if not data or data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.ADX(data)
+        if not result or result is None:
+            raise IndicatorException
+        return result
+
     def get_macd_mfi_stoch(self, ticker, backdate=None):
         """Given a ticker symbol and a historic, calculate various indicators from then to now.
 
@@ -78,18 +183,30 @@ class Indicators:
         bars = self.get_bars(ticker, backdate)
         data = set_candlestick_df(bars)
 
-        print(data["close"].iloc[-1], data["close"].iloc[-2], data["close"].iloc[-3])
-
         # get MACD
-        macd = TA.MACD(data)
-        _macds = macd["MACD"]
-        _signals = macd["SIGNAL"]
+        try:
+            macd = self.get_macd(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            _macds = macd["MACD"]
+            _signals = macd["SIGNAL"]
 
         # get money flow index
-        mfi = TA.MFI(data)
+        try:
+            mfi = self.get_mfi(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         # get stochastic oscillator
-        stoch = TA.STOCH(data)
+        try:
+            stoch = self.get_stoch(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         data["ticker"]  = ticker
         data["macd"]    = _macds
@@ -120,13 +237,28 @@ class Indicators:
         print(data["close"].iloc[-1], data["close"].iloc[-2], data["close"].iloc[-3])
 
         # get VZO   - bullish trend range 5-40%; oversold - -40%; extremely oversold -60%
-        vzo = TA.VZO(data)
+        try:
+            vzo = self.get_vzo(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         # get DMI   - buy sign when + line crosses over - line
-        dmi = TA.DMI(data)
+        try:
+            dmi = self.get_dmi(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         # get APZ   - volatility indicator
-        apz = TA.APZ(data)
+        try:
+            apz = self.get_apz(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         data["ticker"]  = ticker
         data["vzo"]     = vzo
@@ -149,14 +281,22 @@ class Indicators:
         data = set_candlestick_df(bars)
 
         # get MACD
-        macd        = TA.MACD(data)
-        _macds      = macd["MACD"]
-        _signals    = macd["SIGNAL"]
+        try:
+            macd = self.get_macd(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            _macds = macd["MACD"]
+            _signals = macd["SIGNAL"]
 
         # get VW_MACD
-        vwmacd      = TA.VW_MACD(data)
-        _vmacds      = vwmacd["MACD"]
-        _vsignals    = vwmacd["SIGNAL"]
+        try:
+            vwmacd = self.get_vwmacd(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            _vmacds      = vwmacd["MACD"]
+            _vsignals    = vwmacd["SIGNAL"]
 
         data["ticker"]  = ticker
         data["macd"]    = _macds
@@ -178,38 +318,81 @@ class Indicators:
         data = set_candlestick_df(bars)
 
         # get Bollinger bands
-        bbands = TA.BBANDS(data)
-        _bb_up = bbands["BB_UPPER"]
-        _bb_mid = bbands["BB_MIDDLE"]
-        _bb_low = bbands["BB_LOWER"]
+        try:
+            bbands = self.get_bbands(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            _bb_up = bbands["BB_UPPER"]
+            _bb_mid = bbands["BB_MIDDLE"]
+            _bb_low = bbands["BB_LOWER"]
 
         # get MACD
-        macd = TA.MACD(data)
-        _macds = macd["MACD"]
-        _signals = macd["SIGNAL"]
+        try:
+            macd = self.get_macd(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            _macds = macd["MACD"]
+            _signals = macd["SIGNAL"]
 
         # get VW_MACD
-        vwmacd      = TA.VW_MACD(data)
-        _vmacds      = vwmacd["MACD"]
-        _vsignals    = vwmacd["SIGNAL"]
+        try:
+            vwmacd = self.get_vwmacd(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            _vmacds      = vwmacd["MACD"]
+            _vsignals    = vwmacd["SIGNAL"]
 
         # get money flow index
-        mfi = TA.MFI(data)
+        try:
+            mfi = self.get_mfi(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         # get stochastic oscillator
-        stoch = TA.STOCH(data)
+        try:
+            stoch = self.get_stoch(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         # get VZO   - bullish trend range 5-40%; oversold - -40%; extremely oversold -60%
-        vzo = TA.VZO(data)
+        try:
+            vzo = self.get_vzo(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         # get ADX   - trending if > 20; > 40 is strong trend; > 50 is very strongtrend
-        adx = TA.ADX(data)
+        try:
+            adx = self.get_adx(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         # get APZ   - volatility indicator -- might be useful in sentiment comparison
-        apz = TA.APZ(data)
+        try:
+            apz = self.get_apz(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
 
         # get DMI   - buy sign when + line crosses over - line
-        dmi = TA.DMI(data)
+        try:
+            dmi = TA.DMI(data)
+        except IndicatorException:
+            raise IndicatorException
+        else:
+            pass
+
         # ¯\_(ツ)_/¯ seems to be a bug in finta DMI implementation - returning lists of NaN
         # TODO: investigate - https://github.com/bbeale/finta
         # Seems to be appending the values I am expecting it to return directly to my dataframe instead of returning them.
@@ -247,3 +430,7 @@ class Indicators:
         data["apz_l_ptc"]       = apz["LOWER"].pct_change()
 
         return data
+
+
+class IndicatorException(Exception):
+    pass
