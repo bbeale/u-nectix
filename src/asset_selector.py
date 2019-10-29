@@ -181,7 +181,7 @@ class AssetSelector:
                 if eval_result in calling_fn and len(results.keys()) < poolsize:
                     results[i.symbol] = df
 
-                    print("Ticker: {}\nPoolsize: {}\nResult Length: {}".format(
+                    print("Ticker: {}\t\tPoolsize: {}\t\tResult Length: {}".format(
                         i.symbol, poolsize, len(results.keys())))
 
     def evaluate_candlestick(self, asset, barcount):
