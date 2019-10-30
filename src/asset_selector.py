@@ -168,8 +168,7 @@ class AssetSelector:
 
         for i in asset_list:
             if len(results.keys()) == poolsize:
-                print(results.keys())
-                return
+                return results
 
             try:
                 df, eval_result = self.evaluate_candlestick(i, barcount)
@@ -220,7 +219,7 @@ class AssetSelector:
         :param poolsize:
         :return:
         """
-        self.evaluate_candlesticks(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
+        self.bulls = self.evaluate_candlesticks(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
 
         # return bulls
         return self.bulls
@@ -232,7 +231,7 @@ class AssetSelector:
         :param poolsize:
         :return:
         """
-        self.evaluate_candlesticks(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
+        self.bears = self.evaluate_candlesticks(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
 
         # return bears
         return self.bears
