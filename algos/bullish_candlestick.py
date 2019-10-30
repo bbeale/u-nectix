@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from src.asset_selector import AssetSelector
 from src.indicators import Indicators
-from util import submit_buy_order
+from util import submit_buy_order, bullish_sequence
 
 
 def run(alpaca_api):
@@ -22,7 +22,7 @@ def run(alpaca_api):
         if instrument["macd"].iloc[-1] > instrument["signal"].iloc[-1] and instrument["macd_ptc"].iloc[-1] > 0:
             # if the MACD checks out, check the directional movement indicator
             # has the DMI positive value crossed over the negative value? Is percentage change positive?
-            if instrument["DMp"].iloc[-1] > instrument["DMm"].iloc[-1] and instrument["DMm_ptc"].iloc[-1] > 0:
+            if instrument["DMp"].iloc[-1] > instrument["DMm"].iloc[-1] and bullish_sequence(instrument["DMm"].iloc[-3], instrument["DMm"].iloc[-2], instrument["DMm"].iloc[-1]):
                 # if DMI checks out, check the volume zone oscillator
                 # the VZO should cross into the bullish range and continue going up
                 if (instrument["vzo"].iloc[-3] < instrument["vzo"].iloc[-2] < -40 < instrument["vzo"].iloc[-1]) and \

@@ -46,8 +46,8 @@ def main():
     print("${} is available as buying power.".format(trading_account.buying_power))
 
     """Run the algorithm."""
-    # bullish_candlestick.run(alpaca_api)
-    bearish_candlestick.run(alpaca_api)
+    bullish_candlestick.run(alpaca_api)
+    # bearish_candlestick.run(alpaca_api)
     # edgar.run(alpaca_api, twitter_api, edgar_token)
     # simple_candlestick.run(alpaca_api)
 
