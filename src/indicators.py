@@ -77,91 +77,91 @@ class Indicators:
 
     def get_macd(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.MACD(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
     def get_mfi(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.MFI(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
     def get_stoch(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.STOCH(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
     def get_vzo(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.VZO(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
     def get_dmi(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.DMI(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
     def get_apz(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.APZ(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
     def get_vwmacd(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.VW_MACD(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
     def get_bbands(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.BBANDS(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
     def get_adx(self, data):
 
-        if not data or data is None:
+        if data is None:
             raise ValueError("Invalid data value")
 
         result = TA.ADX(data)
-        if not result or result is None:
+        if result is None:
             raise IndicatorException
         return result
 
