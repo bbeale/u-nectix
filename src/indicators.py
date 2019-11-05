@@ -165,6 +165,16 @@ class Indicators:
             raise IndicatorException
         return result
 
+    def get_vwap(self, data):
+
+        if data is None:
+            raise ValueError("Invalid data value")
+
+        result = TA.VWAP(data)
+        if result is None:
+            raise IndicatorException
+        return result
+
     def get_macd_mfi_stoch(self, ticker, backdate=None):
         """Given a ticker symbol and a historic, calculate various indicators from then to now.
 
@@ -370,12 +380,13 @@ class Indicators:
             pass
 
         # get ADX   - trending if > 20; > 40 is strong trend; > 50 is very strongtrend
-        try:
-            adx = self.get_adx(data)
-        except IndicatorException:
-            raise IndicatorException
-        else:
-            pass
+        # Welp this uses the broken indicator, therefore it is also broken.
+        # try:
+        #     adx = self.get_adx(data)
+        # except IndicatorException:
+        #     raise IndicatorException
+        # else:
+        #     pass
 
         # get APZ   - volatility indicator -- might be useful in sentiment comparison
         try:
@@ -411,7 +422,7 @@ class Indicators:
         data["mfi"]             = mfi
         data["stoch"]           = stoch
         data["vzo"]             = vzo
-        data["adx"]             = adx
+        # data["adx"]             = adx
         data["apz_u"]           = apz["UPPER"]
         data["apz_l"]           = apz["LOWER"]
         # Percent changes
@@ -425,7 +436,7 @@ class Indicators:
         data["mfi_ptc"]         = mfi.pct_change()
         data["stoch_ptc"]       = stoch.pct_change()
         data["vzo_ptc"]         = vzo.pct_change()
-        data["adx_ptc"]         = adx.pct_change()
+        # data["adx_ptc"]         = adx.pct_change()
         data["apz_u_ptc"]       = apz["UPPER"].pct_change()
         data["apz_l_ptc"]       = apz["LOWER"].pct_change()
 
