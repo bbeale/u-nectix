@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from util import time_formatter
 import configparser
 import nltk
@@ -22,7 +21,6 @@ class TwitterInterface:
 
         nltk.download('vader_lexicon')
 
-        self.sid        = SentimentIntensityAnalyzer()
         self.api        = twitter_api_interface
         self.dataframe  = dataframe
         self.tweets     = dict()
