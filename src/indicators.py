@@ -8,7 +8,7 @@ import time
 
 class Indicators:
 
-    def __init__(self, alpaca_api_interface, dataframe):
+    def __init__(self, alpaca_api_interface, dataframe=None):
 
         if not alpaca_api_interface or alpaca_api_interface is None:
             raise ValueError("Alpaca API interface instance required")
