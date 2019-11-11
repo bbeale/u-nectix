@@ -43,7 +43,7 @@ class TwitterInterface:
         else:
             query = "{} stock {}".format(ticker, search_terms)
 
-        results = self.api.GetSearch(query, result_type="recent")
+        results = self.api.GetSearch(query, result_type="recent", count=100)
 
         result_dicts    = [dict(
             created_at  = time_formatter(float(result.created_at_in_seconds)),
