@@ -132,15 +132,15 @@ class AssetSelector:
             raise ValueError("Dataframe cannot be None.")
 
         pattern = bullish_candlestick_patterns(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
-        candle = None
+        direction = None
 
         if pattern in ["hammer", "inverseHammer"]:
-            candle = "bull"
+            direction = "bull"
 
         if pattern in ["bullishEngulfing", "piercingLine", "morningStar", "threeWhiteSoldiers"]:
-            candle = "bear"
+            direction = "bear"
 
-        return candle
+        return direction, pattern
 
     def evaluate_candlesticks(self, asset_list, fname, barcount, poolsize=5):
         """Given a list of assets, evaluate which ones are bullish or bearish and return a sample of each.
@@ -165,13 +165,15 @@ class AssetSelector:
 
         calling_fn = fname
         results = dict()
+        print("Ticker".ljust(10), "Close".ljust(11), "Change".ljust(11), "Volume")
+        print("{:<30}".format("–" * 45))
 
         for i in asset_list:
             if len(results.keys()) == poolsize:
                 return results
 
             try:
-                df, eval_result = self.evaluate_candlestick(i, barcount)
+                df, eval_result, pattern = self.evaluate_candlestick(i, barcount)
             except DataframeException:
                 continue
             except CandlestickException:
@@ -180,8 +182,7 @@ class AssetSelector:
                 if eval_result in calling_fn and len(results.keys()) < poolsize:
                     results[i.symbol] = df
 
-                    print("Ticker: {}\t\tPoolsize: {}\t\tResult Length: {}".format(
-                        i.symbol, poolsize, len(results.keys())))
+                    print(i.symbol.ljust(10), "$" + str(df["close"].iloc[-1]).ljust(10), "$" + str(round(df["close"].iloc[-1] - df["close"].iloc[-2], 2)).ljust(10), str(df["volume"].iloc[-1]))
 
     def evaluate_candlestick(self, asset, barcount):
         """Return the candlestick pattern and dataframe of an asset if a bullish or bearish pattern is detected among the last three closing prices.
@@ -206,9 +207,9 @@ class AssetSelector:
         df = self.extract_bar_data(barset, asset.symbol)
 
         # evaluate candlestick direction
-        candle_pattern = self.candle_pattern_direction(df)
-        if candle_pattern is not None:
-            return df, candle_pattern
+        candle, pattern = self.candle_pattern_direction(df)
+        if candle is not None:
+            return df, candle, pattern
         else:
             raise CandlestickException("Pattern not detected.")
 
