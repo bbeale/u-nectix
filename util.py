@@ -183,3 +183,11 @@ def num_bars(barset, length):
     if not res or res is False:
         res = len(barset) == length - 1
     return res
+
+def logarithmic_scale(series):
+    """Convert a series from a linear scale to a logarithmic scale.
+
+    :param series:
+    :return:
+    """
+    return np.log(series) - np.log(series.shift(1))
