@@ -160,15 +160,23 @@ def set_candlestick_df(bars):
     if not bars or bars is None:
         raise ValueError("Bars cannot be none")
 
-    data = pd.DataFrame()
-    data["time"]    = [bar.t for bar in bars if bar is not None]
+    data            = pd.DataFrame(index=[bar.t for bar in bars if bar is not None])
     data["open"]    = [bar.o for bar in bars if bar is not None]
     data["high"]    = [bar.h for bar in bars if bar is not None]
     data["low"]     = [bar.l for bar in bars if bar is not None]
     data["close"]   = [bar.c for bar in bars if bar is not None]
     data["volume"]  = [bar.v for bar in bars if bar is not None]
 
+    # numpy format
+    # not really sure what to do as far as getting data into np arrays
+    data["np_open"]     = np.array([bar.o for bar in bars if bar is not None])
+    data["np_high"]     = np.array([bar.h for bar in bars if bar is not None])
+    data["np_low"]      = np.array([bar.l for bar in bars if bar is not None])
+    data["np_close"]    = np.array([bar.c for bar in bars if bar is not None])
+    data["np_volume"]   = np.array([bar.v for bar in bars if bar is not None])
+
     return data
+
 
 def num_bars(barset, length):
     """Check the bar count to ensure uniform length for dataframe.
@@ -183,6 +191,7 @@ def num_bars(barset, length):
     if not res or res is False:
         res = len(barset) == length - 1
     return res
+
 
 def logarithmic_scale(series):
     """Convert a series from a linear scale to a logarithmic scale.
