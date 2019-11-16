@@ -411,7 +411,7 @@ class Indicators:
         # data["dmi_p"]       = dmi["DMp"]
         # data["dmi_m"]       = dmi["DMm"]
 
-        data["ticker"]          = ticker
+        # data["ticker"]          = ticker
         data["bb_up"]           = _bb_up
         data["bb_mid"]          = _bb_mid
         data["bb_low"]          = _bb_low
