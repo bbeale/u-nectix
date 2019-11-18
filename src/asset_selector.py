@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from util import bullish_candlestick_patterns, time_formatter, num_bars
+from src.indicators import Indicators
 from src.edgar_interface import EdgarInterface
 from requests.exceptions import HTTPError
 import pandas as pd
@@ -22,6 +23,7 @@ class AssetSelector:
         self.api                = alpaca_api_interface
         self.backdate           = backdate
         self.edgar_token        = None
+        self.indicators         = Indicators(self.api)
 
         if edgar_token is not None:
             self.edgar_token = edgar_token
@@ -165,7 +167,7 @@ class AssetSelector:
 
         calling_fn = fname
         results = dict()
-        print("Ticker".ljust(10), "Close".ljust(11), "Change".ljust(11), "Volume")
+        print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD Buy?".ljust(10), "MFI".ljust(10), "VZO".ljust(10), "Stochastic Oscillator".ljust(10), "Pattern")
         print("{:<30}".format("–" * 45))
 
         for i in asset_list:
@@ -180,9 +182,31 @@ class AssetSelector:
                 continue
             else:
                 if eval_result in calling_fn and len(results.keys()) < poolsize:
-                    results[i.symbol] = df
 
-                    print(i.symbol.ljust(10), "$" + str(df["close"].iloc[-1]).ljust(10), "$" + str(round(df["close"].iloc[-1] - df["close"].iloc[-2], 2)).ljust(10), str(df["volume"].iloc[-1]))
+                    results[i.symbol] = df
+                    _macd = self.indicators.get_macd(df)
+                    macd = _macd["MACD"]
+                    signal = _macd["SIGNAL"]
+                    mfi = self.indicators.get_mfi(df)
+                    vzo = self.indicators.get_vzo(df)
+                    stoch = self.indicators.get_stoch(df)
+
+                    try:
+                        buysignal = macd.iloc[-1] < 0 and min(macd.iloc[-4:-2]) < signal.iloc[-1] and macd.iloc[-1] > \
+                                    signal.iloc[-1]
+                    except IndexError:
+                        # Throwing away due to index errors, will handle later
+                        continue
+
+                    print(i.symbol.ljust(10),
+                          "${:.2f}".format(df["close"].iloc[-1]).ljust(10),
+                          "${:.2f}".format(df["close"].iloc[-1] - df["close"].iloc[-2]).ljust(10),
+                          "{:.2f}%".format(df["close"].pct_change().iloc[-1] - df["close"].pct_change().iloc[-2]).ljust(10),
+                          str(buysignal).ljust(10),
+                          "{:.2f}".format(mfi.iloc[-1]).ljust(10),
+                          "{:.2f}".format(vzo.iloc[-1]).ljust(10),
+                          "{:.2f}".format(stoch.iloc[-1]).ljust(10),
+                          str(pattern))
 
     def evaluate_candlestick(self, asset, barcount):
         """Return the candlestick pattern and dataframe of an asset if a bullish or bearish pattern is detected among the last three closing prices.
