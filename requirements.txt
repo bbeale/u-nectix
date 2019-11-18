@@ -20,12 +20,10 @@ cycler==0.10.0
 cymem==2.0.2
 decorator==4.4.0
 defusedxml==0.6.0
-en-core-web-lg==2.1.0
-en-vectors-web-lg==2.1.0
 entrypoints==0.3
 finta==0.3.9
 future==0.17.1
-gast==0.3.2
+gast==0.2.2
 google-pasta==0.1.7
 grpcio==1.24.0
 h5py==2.10.0
@@ -50,9 +48,6 @@ Markdown==3.1.1
 MarkupSafe==1.1.1
 matplotlib==3.1.1
 mistune==0.8.4
-mkl-fft==1.0.14
-mkl-random==1.1.0
-mkl-service==2.3.0
 murmurhash==1.0.2
 nbconvert==5.6.0
 nbformat==4.4.0
@@ -122,3 +117,4 @@ websockets==8.0.2
 Werkzeug==0.16.0
 widgetsnbextension==3.5.1
 wrapt==1.11.2
+empyrical
