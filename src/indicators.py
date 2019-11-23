@@ -75,7 +75,8 @@ class Indicators:
         finally:
             return bars
 
-    def get_macd(self, data):
+    @staticmethod
+    def get_macd(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -85,7 +86,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_mfi(self, data):
+    @staticmethod
+    def get_mfi(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -95,7 +97,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_stoch(self, data):
+    @staticmethod
+    def get_stoch(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -105,7 +108,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_vzo(self, data):
+    @staticmethod
+    def get_vzo(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -115,7 +119,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_dmi(self, data):
+    @staticmethod
+    def get_dmi(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -125,7 +130,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_apz(self, data):
+    @staticmethod
+    def get_apz(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -135,7 +141,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_vwmacd(self, data):
+    @staticmethod
+    def get_vwmacd(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -145,7 +152,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_bbands(self, data):
+    @staticmethod
+    def get_bbands(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -155,7 +163,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_adx(self, data):
+    @staticmethod
+    def get_adx(data):
 
         if data is None:
             raise ValueError("Invalid data value")
@@ -165,7 +174,8 @@ class Indicators:
             raise IndicatorException
         return result
 
-    def get_vwap(self, data):
+    @staticmethod
+    def get_vwap(data):
 
         if data is None:
             raise ValueError("Invalid data value")
