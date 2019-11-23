@@ -167,14 +167,6 @@ def set_candlestick_df(bars):
     data["close"]   = [bar.c for bar in bars if bar is not None]
     data["volume"]  = [bar.v for bar in bars if bar is not None]
 
-    # numpy format
-    # not really sure what to do as far as getting data into np arrays
-    data["np_open"]     = np.array([bar.o for bar in bars if bar is not None])
-    data["np_high"]     = np.array([bar.h for bar in bars if bar is not None])
-    data["np_low"]      = np.array([bar.l for bar in bars if bar is not None])
-    data["np_close"]    = np.array([bar.c for bar in bars if bar is not None])
-    data["np_volume"]   = np.array([bar.v for bar in bars if bar is not None])
-
     return data
 
 
