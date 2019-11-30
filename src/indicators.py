@@ -435,20 +435,6 @@ class Indicators:
         # data["adx"]             = adx
         data["apz_u"]           = apz["UPPER"]
         data["apz_l"]           = apz["LOWER"]
-        # Percent changes
-        data["bb_up_ptc"]       = _bb_up.pct_change()
-        data["bb_mid_ptc"]      = _bb_mid.pct_change()
-        data["bb_low_ptc"]      = _bb_low.pct_change()
-        data["macd_ptc"]        = _macds.pct_change()
-        data["signal_ptc"]      = _signals.pct_change()
-        data["vwmacd_ptc"]      = _vmacds.pct_change()
-        data["vwsignal_ptc"]    = _vsignals.pct_change()
-        data["mfi_ptc"]         = mfi.pct_change()
-        data["stoch_ptc"]       = stoch.pct_change()
-        data["vzo_ptc"]         = vzo.pct_change()
-        # data["adx_ptc"]         = adx.pct_change()
-        data["apz_u_ptc"]       = apz["UPPER"].pct_change()
-        data["apz_l_ptc"]       = apz["LOWER"].pct_change()
 
         return data
 
