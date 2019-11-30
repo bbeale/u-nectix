@@ -4,7 +4,6 @@ from util import bullish_candlestick_patterns, time_formatter, num_bars, set_can
 from src.indicators import Indicators
 from src.edgar_interface import EdgarInterface
 from requests.exceptions import HTTPError
-import pandas as pd
 import inspect
 import json
 import time
@@ -176,60 +175,77 @@ class AssetSelector:
             else:
                 if eval_result in calling_fn and len(results.keys()) < poolsize:
 
-                    results[i.symbol] = df
-                    _macd = Indicators.get_macd(df)
-                    mfi = Indicators.get_mfi(df)
-                    vzo = Indicators.get_vzo(df)
-                    stoch = Indicators.get_stoch(df)
-                    macd = _macd["MACD"]
-                    signal = _macd["SIGNAL"]
-
                     num_criteria = 0
+                    macd_buysignal = self.macd_buy(df)
+                    mfi_buysignal = self.mfi_buy(df)
+                    vzo_buysignal = self.vzo_buy(df)
+                    stoch_buysignal = self.stoch_buy(df)
 
-                    # TODO: factor these buy signals out into methods
-                    # calculate macd buy signal
-                    # signal is true when macd bullish crossover of signal and mmacd < 0
-                    try:
-                        macd_buysignal = macd.iloc[-1] < 0 and min(macd.iloc[-4:-2]) < signal.iloc[-1] and macd.iloc[-1] > \
-                                         signal.iloc[-1]
-                    except IndexError:
-                        # Throwing away due to index errors, will handle later
-                        continue
+                    if mfi_buysignal:
+                        num_criteria += 1
 
-                    # calculate mfi buy signal via bullish 10% crossover
-                    try:
-                        mfi_buysignal = vzo.iloc[-1] > -40 and min(vzo.iloc[-4:-2]) <= -40
-                    except IndexError:
-                        continue
-                    else:
-                        if mfi_buysignal:
-                            num_criteria += 1
+                    if vzo_buysignal:
+                        num_criteria += 1
 
-                    # calculate the VZO buy signal -- look for bullish -40% crossover
-                    try:
-                        vzo_buysignal = mfi.iloc[-1] > 10 and min(mfi.iloc[-4:-2]) <= 10
-                    except IndexError:
-                        continue
-                    else:
-                        if vzo_buysignal:
-                            num_criteria += 1
-
-                    # calculate stochastic buy signal via bullish 10% crossover
-                    try:
-                        stoch_buysignal = stoch.iloc[-1] > 10 and min(stoch.iloc[-4:-2]) <= 10
-                    except IndexError:
-                        continue
-                    else:
-                        if stoch_buysignal:
-                            num_criteria += 1
+                    if stoch_buysignal:
+                        num_criteria += 1
 
                     if macd_buysignal and num_criteria >= 1:
                         # display the result if it meets criteria
-
-                        # TODO: make this actually return or append asset selection again
-
+                        results[i.symbol] = df
                         print(i.symbol.ljust(10), "${:.2f}".format(df["close"].iloc[-1]).ljust(10), "${:.2f}".format(df["close"].iloc[-1] - df["close"].iloc[-2]).ljust(10), "{:.2f}%".format(df["close"].pct_change().iloc[-1] - df["close"].pct_change().iloc[-2]).ljust(10), str(macd_buysignal).ljust(10), str(mfi_buysignal).ljust(10), str(vzo_buysignal).ljust(10), str(stoch_buysignal).ljust(10), str(pattern))
-        print("done")
+
+    @staticmethod
+    def macd_buy(dataframe):
+
+        raw_macd = Indicators.get_macd(dataframe)
+
+        try:
+            macd_buysignal = raw_macd["MACD"].iloc[-1] < 0 and min(raw_macd["MACD"].iloc[-4:-2]) < raw_macd["SIGNAL"].iloc[-1] and raw_macd["MACD"].iloc[-1] > \
+                             raw_macd["SIGNAL"].iloc[-1]
+        except IndexError:
+            # Throwing away due to index errors, will handle later
+            raise AssetException
+        else:
+            return macd_buysignal
+
+    @staticmethod
+    def mfi_buy(dataframe):
+
+        raw_mfi = Indicators.get_mfi(dataframe)
+
+        try:
+            mfi_buysignal = raw_mfi.iloc[-1] > 10 and min(raw_mfi.iloc[-4:-2]) <= 10
+        except IndexError:
+            # Throwing away due to index errors, will handle later
+            raise AssetException
+        else:
+            return mfi_buysignal
+
+    @staticmethod
+    def vzo_buy(dataframe):
+
+        raw_vzo = Indicators.get_vzo(dataframe)
+
+        try:
+            vzo_buysignal = raw_vzo.iloc[-1] > -40 and min(raw_vzo.iloc[-4:-2]) <= -40
+        except IndexError:
+            # Throwing away due to index errors, will handle later
+            raise AssetException
+        else:
+            return vzo_buysignal
+
+    @staticmethod
+    def stoch_buy(dataframe):
+
+        raw_stoch = Indicators.get_stoch(dataframe)
+
+        try:
+            stoch_buysignal = raw_stoch.iloc[-1] > 10 and min(raw_stoch.iloc[-4:-2]) <= 10
+        except IndexError:
+            raise AssetException
+        else:
+            return stoch_buysignal
 
     def evaluate_candlestick(self, asset, barcount):
         """Return the candlestick pattern and dataframe of an asset if a bullish or bearish pattern is detected among the last three closing prices.
