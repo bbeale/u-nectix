@@ -4,6 +4,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import nltk
 
+class SentimentAnalysisException(Exception):
+    pass
 
 class SentimentAnalysis:
 
@@ -22,18 +24,23 @@ class SentimentAnalysis:
             self.sentiments[ticker] = self.get_sentiment(ticker)
         return self.sentiments
 
-    def get_sentiment(self, text):
+    @staticmethod
+    def get_sentiment(text):
         """Given a text block, return a sentiment score based.
 
         :param text:
         :return:
         """
-        text_polarity   = self.sid.polarity_scores(text)
-
-        if text_polarity["compound"] > 0:
-            sentiment   = "positive"
-
+        sid = SentimentIntensityAnalyzer()
+        try:
+            text_polarity = sid.polarity_scores(text)
+        except SentimentAnalysisException:
+            raise SentimentAnalysisException("[!] Unable to calculate polarity scores for this text element.")
         else:
-            sentiment   = "negative"
+            if text_polarity["compound"] > 0:
+                sentiment   = "positive"
 
-        return sentiment
+            else:
+                sentiment   = "negative"
+
+            return sentiment

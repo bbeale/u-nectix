@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from util import time_formatter, set_candlestick_df
+import src.twitter_interface as twitter
 from requests.exceptions import HTTPError
 from pandas.errors import EmptyDataError
 from finta import TA
@@ -9,7 +10,6 @@ import time
 
 class IndicatorException(Exception):
     pass
-
 
 class Indicators:
 
