@@ -1,0 +1,28 @@
+[edgar]
+TOKEN                   : token
+URL                     : https://api.sec-api.io
+
+[alpaca]
+APCA_API_KEY_ID         : keyID
+APCA_API_SECRET_KEY     : key
+APCA_API_BASE_URL       : https://api.alpaca.markets
+VERSION                 : v2
+
+[alpha_vantage]
+API_KEY                 : key
+
+[twitter]
+CONSUMER_KEY            : key
+CONSUMER_SECRET         : secret
+ACCESS_TOKEN_KEY        : key
+ACCESS_TOKEN_SECRET     : secret
+
+[tenquant]
+api_key                 : key
+base_url                : https://api.tenquant.io/
+
+[iex_cloud]
+IEX_TOKEN               : <sk_#>
+base_url                : https://cloud.iexapis.com/
+
+
