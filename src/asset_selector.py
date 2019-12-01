@@ -14,7 +14,7 @@ class AssetSelector:
     def __init__(self, alpaca_api_interface, backdate=None, edgar_token=None):
 
         if not alpaca_api_interface or alpaca_api_interface is None:
-            raise ValueError("Alpaca API interface instance required.")
+            raise ValueError("[!] Alpaca API interface instance required.")
 
         if not backdate or backdate is None:
             backdate = time_formatter(time.time() - (604800 * 13))
@@ -101,10 +101,10 @@ class AssetSelector:
         :return:
         """
         if not bar_object or bar_object is None:
-            raise ValueError("Bar object cannot be None.")
+            raise ValueError("[!] Bar object cannot be None.")
 
         if not symbol or symbol is None:
-            raise ValueError("Must give a valid ticker symbol.")
+            raise ValueError("[!] Must give a valid ticker symbol.")
 
         bars = bar_object[symbol]
 
@@ -123,7 +123,7 @@ class AssetSelector:
         :return:
         """
         if dataframe is None:
-            raise ValueError("Dataframe cannot be None.")
+            raise ValueError("[!] Dataframe cannot be None.")
 
         pattern = bullish_candlestick_patterns(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
         direction = None
@@ -146,10 +146,10 @@ class AssetSelector:
         :return:
         """
         if not asset_list or asset_list is None:
-            raise ValueError("Asset list cannot be None.")
+            raise ValueError("[!] Asset list cannot be None.")
 
         if not fname or fname is None:
-            raise ValueError("Name of calling entity required.")
+            raise ValueError("[!] Name of calling entity required.")
 
         if not barcount or barcount is None:
             barcount = 64
@@ -159,8 +159,8 @@ class AssetSelector:
 
         calling_fn = fname
         results = dict()
-        print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD Buy?".ljust(10), "MFI".ljust(10), "VZO".ljust(10), "Stochastic Oscillator".ljust(10), "Pattern")
-        print("{:<30}".format("–" * 45))
+        print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD?".ljust(10), "MFI?".ljust(10), "VZO?".ljust(10), "Stoch?".ljust(10), "Pattern")
+        print("{:<30}".format("–" * 100))
 
         for i in asset_list:
             if len(results.keys()) == poolsize:
@@ -258,14 +258,14 @@ class AssetSelector:
         :return:
         """
         if not asset or asset is None:
-            raise ValueError("Unable to evaluate a None asset.")
+            raise ValueError("[!] Unable to evaluate a None asset.")
 
         barset = self.get_barset(asset.symbol, "1D", self.backdate)
         if barset is None:
-            raise DataframeException("Invalid barset -- cannot be None.")
+            raise DataframeException("[!] Invalid barset -- cannot be None.")
 
         if num_bars(barset[asset.symbol], barcount) is False:
-            raise DataframeException("Insufficient data.")
+            raise DataframeException("[!] Insufficient data.")
 
         df = self.extract_bar_data(barset, asset.symbol)
 
@@ -274,7 +274,7 @@ class AssetSelector:
         if candle is not None:
             return df, candle, pattern
         else:
-            raise CandlestickException("Pattern not detected.")
+            raise CandlestickException("[!] Pattern not detected.")
 
     def bullish_candlesticks(self, barcount=64, poolsize=5):
         """Return assets with a bullish pattern of closing prices over a given period.
@@ -323,7 +323,7 @@ class AssetSelector:
         active_assets   = self.get_assets()
         assets          = self.extract_tradeable_assets(active_assets)
 
-        print("Going through assets looking for firms with recent SEC filings")
+        print("[-] Going through assets looking for firms with recent SEC filings")
         for i in assets:
 
             self.get_filings(i, backdate=backdate, date=date, form_type=form_type)
@@ -350,17 +350,17 @@ class AssetSelector:
 
         # If none are found, lengthen the lookback window a couple times
         if filings["total"] is 0:
-            print("No recent filings found for {}. Looking back 2 weeks".format(asset.symbol))
+            print("[!] No recent filings found for {}. Looking back 2 weeks".format(asset.symbol))
             backdate = time_formatter(time.time() - (604800 * 2), time_format="%Y-%m-%d")
             filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
 
         if filings["total"] is 0:
-            print("No filings found. Looking back 4 weeks")
+            print("[!] No filings found. Looking back 4 weeks")
             backdate = time_formatter(time.time() - (604800 * 4), time_format="%Y-%m-%d")
             filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
 
         if filings["total"] > 0:
-            print("\tAdded:", asset.symbol, " symbols:", len(self.recent_filings.keys()) + 1)
+            print("[+] Added:", asset.symbol, " symbols:", len(self.recent_filings.keys()) + 1)
             filings = json.dumps(filings)
             self.recent_filings[asset.symbol] = filings
 

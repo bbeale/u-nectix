@@ -17,7 +17,7 @@ class EdgarInterface:
     def __init__(self, edgar_token, dataframe=None):
 
         if not edgar_token or edgar_token is None:
-            raise ValueError("Edgar token required for API access")
+            raise ValueError("[!] Edgar token required for API access")
 
         self.base_url       = "https://api.sec-api.io"
         self.token          = edgar_token
@@ -28,7 +28,7 @@ class EdgarInterface:
     def get_edgar_signals(self):
         """Loop through tickers and append EDGAR signals to that ticker's dataframe"""
         if not self.dataframe or self.dataframe is None:
-            raise NotImplementedError("Dataframe should only be none if AssetSelector is using it")
+            raise NotImplementedError("[!] Dataframe should only be none if AssetSelector is using it")
 
         for ticker in self.dataframe.keys():
             fdate = self.dataframe[ticker]["time"].iloc[-7].strftime("%Y-%m-%d")
@@ -48,13 +48,13 @@ class EdgarInterface:
         :return:
         """
         if not ticker or ticker is None:
-            raise ValueError("Invalid ticker")
+            raise ValueError("[!] Invalid ticker")
 
         if not from_date or from_date is None:
-            raise ValueError("From date required")
+            raise ValueError("[!] From date required")
 
         if not to_date or to_date is None:
-            raise ValueError("To date required")
+            raise ValueError("[!] To date required")
 
         if not form_type or form_type is None:
             form_type = "8-K"       # Default to 8-K if None
@@ -92,13 +92,13 @@ class EdgarInterface:
         :return:
         """
         if not ticker or ticker is None:
-            raise ValueError("Invalid ticker")
+            raise ValueError("[!] Invalid ticker")
 
         if not from_date or from_date is None:
-            raise ValueError("From date required")
+            raise ValueError("[!] From date required")
 
         if not to_date or to_date is None:
-            raise ValueError("To date required")
+            raise ValueError("[!] To date required")
 
         resp = self.get_sec_filings(ticker, from_date, to_date).text
         r_dict = json.loads(resp)
@@ -130,7 +130,7 @@ class EdgarInterface:
                 signal = "BULL"
 
             else:
-                print("Unable to generate signal from SEC filings")
+                print("[!] Unable to generate signal from SEC filings")
                 continue
 
         return signal
