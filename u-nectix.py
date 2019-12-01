@@ -12,7 +12,7 @@ config = configparser.ConfigParser()
 try:
     config.read(os.path.relpath("config.ini"))
 except FileExistsError as e:
-    print("FileExistsError: {}".format(e))
+    print("[!] FileExistsError: {}".format(e))
     sys.exit(1)
 
 
@@ -39,11 +39,11 @@ def main():
 
     # is our account restricted from trading?
     if trading_account.trading_blocked:
-        print("Account is currently restricted from trading.")
+        print("[!] Account is currently restricted from trading.")
         sys.exit(-1)
 
     # how much money can we use to open new positions?
-    print("${} is available as buying power.".format(trading_account.buying_power))
+    print("[?] ${} is available as buying power.".format(trading_account.buying_power))
 
     """Run the algorithm."""
     bullish_candlestick.run(alpaca_api)

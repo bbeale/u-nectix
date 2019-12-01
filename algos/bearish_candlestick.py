@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 from src.asset_selector import AssetSelector
 from src.indicators import Indicators
-from util import submit_buy_order
-
+from util import submit_buy_order, time_formatter
+import time
 
 def run(alpaca_api):
 
     # initial trade state
     trading_symbol  = None
     trading         = False
-    assets          = AssetSelector(alpaca_api, edgar_token=None).bearish_candlesticks(64, 20)
-    indicators      = Indicators(alpaca_api, assets).get_cluster()
+    assets          = AssetSelector(alpaca_api, edgar_token=None).bearish_candlesticks(64, 1)
+    indicators      = Indicators(alpaca_api, assets).get_all_asset_indicators(backdate=time_formatter(time.time() - (604800 * 54)))
 
     # trade decision here
     for i in indicators.keys():
@@ -19,6 +19,9 @@ def run(alpaca_api):
         instrument = indicators[i]
         # check the most recent moving average convergence-divergence
         # has the MACD crossed back down over its signal and is the MACD percentage change is negative?
+
+        # TODO: factor out these bearish / sell signals and put them in asset_selector
+
         if instrument["macd"].iloc[-1] < instrument["signal"].iloc[-1] and instrument["macd_ptc"].iloc[-1] < 0:
             # if the MACD checks out, check the directional movement indicator
             # has the DMI negative value crossed over the positive value? Is percentage change positive?
@@ -43,6 +46,7 @@ def run(alpaca_api):
     trading = False
     if trading is True:
         # decide how much to buy # TODO
+        quant = 10
 
         # then submit
-        submit_buy_order(trading_symbol, "buy", "market", "ioc")
+        submit_buy_order(trading_symbol, quant, "sell", "market", time_in_force="ioc")
