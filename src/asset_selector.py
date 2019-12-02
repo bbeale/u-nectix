@@ -1,12 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from util import bullish_candlestick_patterns, time_formatter, num_bars, set_candlestick_df
-from src.indicators import Indicators
+from src.trade_signal import TradeSignal as TS, TradeSignalException as TSError
 from src.edgar_interface import EdgarInterface
 from requests.exceptions import HTTPError
 import inspect
 import json
 import time
+
+class AssetException(Exception):
+    pass
+
+class CandlestickException(AssetException):
+    pass
+
+class DataframeException(AssetException):
+    pass
 
 
 class AssetSelector:
@@ -176,10 +185,13 @@ class AssetSelector:
                 if eval_result in calling_fn and len(results.keys()) < poolsize:
 
                     num_criteria = 0
-                    macd_buysignal = self.macd_buy(df)
-                    mfi_buysignal = self.mfi_buy(df)
-                    vzo_buysignal = self.vzo_buy(df)
-                    stoch_buysignal = self.stoch_buy(df)
+                    try:
+                        macd_buysignal = TS.macd_buy(df)
+                        mfi_buysignal = TS.mfi_buy(df)
+                        vzo_buysignal = TS.vzo_buy(df)
+                        stoch_buysignal = TS.stoch_buy(df)
+                    except TSError:
+                        raise TSError("[!] Failed to compute one or more expected buy signals.")
 
                     if mfi_buysignal:
                         num_criteria += 1
@@ -194,58 +206,6 @@ class AssetSelector:
                         # display the result if it meets criteria
                         results[i.symbol] = df
                         print(i.symbol.ljust(10), "${:.2f}".format(df["close"].iloc[-1]).ljust(10), "${:.2f}".format(df["close"].iloc[-1] - df["close"].iloc[-2]).ljust(10), "{:.2f}%".format(df["close"].pct_change().iloc[-1] - df["close"].pct_change().iloc[-2]).ljust(10), str(macd_buysignal).ljust(10), str(mfi_buysignal).ljust(10), str(vzo_buysignal).ljust(10), str(stoch_buysignal).ljust(10), str(pattern))
-
-    @staticmethod
-    def macd_buy(dataframe):
-
-        raw_macd = Indicators.get_macd(dataframe)
-
-        try:
-            macd_buysignal = raw_macd["MACD"].iloc[-1] < 0 and min(raw_macd["MACD"].iloc[-4:-2]) < raw_macd["SIGNAL"].iloc[-1] and raw_macd["MACD"].iloc[-1] > \
-                             raw_macd["SIGNAL"].iloc[-1]
-        except IndexError:
-            # Throwing away due to index errors, will handle later
-            raise AssetException
-        else:
-            return macd_buysignal
-
-    @staticmethod
-    def mfi_buy(dataframe):
-
-        raw_mfi = Indicators.get_mfi(dataframe)
-
-        try:
-            mfi_buysignal = raw_mfi.iloc[-1] > 10 and min(raw_mfi.iloc[-4:-2]) <= 10
-        except IndexError:
-            # Throwing away due to index errors, will handle later
-            raise AssetException
-        else:
-            return mfi_buysignal
-
-    @staticmethod
-    def vzo_buy(dataframe):
-
-        raw_vzo = Indicators.get_vzo(dataframe)
-
-        try:
-            vzo_buysignal = raw_vzo.iloc[-1] > -40 and min(raw_vzo.iloc[-4:-2]) <= -40
-        except IndexError:
-            # Throwing away due to index errors, will handle later
-            raise AssetException
-        else:
-            return vzo_buysignal
-
-    @staticmethod
-    def stoch_buy(dataframe):
-
-        raw_stoch = Indicators.get_stoch(dataframe)
-
-        try:
-            stoch_buysignal = raw_stoch.iloc[-1] > 10 and min(raw_stoch.iloc[-4:-2]) <= 10
-        except IndexError:
-            raise AssetException
-        else:
-            return stoch_buysignal
 
     def evaluate_candlestick(self, asset, barcount):
         """Return the candlestick pattern and dataframe of an asset if a bullish or bearish pattern is detected among the last three closing prices.
@@ -380,15 +340,3 @@ class AssetSelector:
 
             df = self.extract_bar_data(barset, i.symbol)
             self.assets_by_filing[i.symbol] = df
-
-
-class AssetException(Exception):
-    pass
-
-
-class CandlestickException(AssetException):
-    pass
-
-
-class DataframeException(AssetException):
-    pass
