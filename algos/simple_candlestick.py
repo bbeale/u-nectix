@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 from src.asset_selector import AssetSelector
 from src.indicators import Indicators
-from util import bullish_sequence, submit_buy_order
-
+from util import bullish_sequence, submit_order, time_formatter
+import time
 
 def run(alpaca_api):
 
     # initial trade state
     trading         = False
     trading_symbol  = None
-    assets          = AssetSelector(alpaca_api, edgar_token=None).get_assets_by_candlestick_pattern()
-    indicators      = Indicators(alpaca_api, assets).get_indicators()
+    assets          = AssetSelector(alpaca_api, edgar_token=None).bullish_candlesticks(64, 1)
+    indicators      = Indicators(alpaca_api, assets).get_all_asset_indicators(backdate=time_formatter(time.time() - (604800 * 54)))
 
     # trade decision here
     for i in indicators.keys():
@@ -29,8 +29,18 @@ def run(alpaca_api):
         if trading_symbol is not None:
             break
 
+    # debug
+    print("[?] Trading: ", trading is True)
     if trading is True:
         # decide how much to buy # TODO
+        quant = 10
 
-        # then submit
-        submit_buy_order(trading_symbol, "buy", "market", "ioc")
+        # then submit a buy order
+        submit_order(
+            api_reference=alpaca_api,
+            ticker=trading_symbol,
+            qty=quant,
+            transaction_side="buy",
+            ttype="market",
+            time_in_force="ioc"
+        )

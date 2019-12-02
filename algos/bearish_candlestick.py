@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from src.asset_selector import AssetSelector
 from src.indicators import Indicators
-from util import submit_buy_order, time_formatter
+from util import submit_order, time_formatter
 import time
 
 def run(alpaca_api):
@@ -48,5 +48,12 @@ def run(alpaca_api):
         # decide how much to buy # TODO
         quant = 10
 
-        # then submit
-        submit_buy_order(trading_symbol, quant, "sell", "market", time_in_force="ioc")
+        # then submit a sell order
+        submit_order(
+            api_reference=alpaca_api,
+            ticker=trading_symbol,
+            qty=quant,
+            transaction_side="sell",
+            ttype="market",
+            time_in_force="ioc"
+        )

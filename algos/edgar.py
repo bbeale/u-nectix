@@ -6,16 +6,16 @@ from src.edgar_interface import EdgarInterface
 from src.twitter_interface import TwitterInterface
 from src.sentiment_analysis import SentimentAnalysis as Sent
 from src.predictor import Predictor
-from util import submit_buy_order
+from util import time_formatter, submit_order
+import time
 
-
-def run(alpaca_api, twitter_api, edgar_token):
+def run(alpaca_api, edgar_token):
 
     # initial trade state
     trading         = False
     trading_symbol  = None
-    assets          = AssetSelector(alpaca_api, edgar_token=edgar_token).sec_filings(64, 20)
-    indicators      = Indicators(alpaca_api, assets).get_indicators()
+    assets          = AssetSelector(alpaca_api, edgar_token=edgar_token).sec_filings(64, 1)
+    indicators      = Indicators(alpaca_api, assets).get_all_asset_indicators(backdate=time_formatter(time.time() - (604800 * 54)))
     edgar           = EdgarInterface(edgar_token, indicators).get_edgar_signals()
 
     # TODO: SEC form sentiment analysis
@@ -48,6 +48,14 @@ def run(alpaca_api, twitter_api, edgar_token):
 
     if trading is True:
         # decide how much to buy # TODO
+        quant = 10
 
-        # then submit
-        submit_buy_order(trading_symbol, "buy", "market", "ioc")
+        # then submit a buy order
+        submit_order(
+            api_reference=alpaca_api,
+            ticker=trading_symbol,
+            qty=quant,
+            transaction_side="buy",
+            ttype="market",
+            time_in_force="ioc"
+        )
