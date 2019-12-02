@@ -6,31 +6,9 @@ from pandas.errors import EmptyDataError
 import alpaca_trade_api as tradeapi
 import pandas as pd
 import numpy as np
-import configparser
 import time
 import json
-import sys
 import os
-
-
-# from empyrical import *
-# import alphalens
-
-
-config = configparser.ConfigParser()
-
-try:
-    config.read(os.path.relpath("config.ini"))
-except FileExistsError as e:
-    print("FileExistsError: {}".format(e))
-    sys.exit(1)
-
-api = tradeapi.REST(
-    base_url    = config["alpaca"]["APCA_API_BASE_URL"],
-    key_id      = config["alpaca"]["APCA_API_KEY_ID"],
-    secret_key  = config["alpaca"]["APCA_API_SECRET_KEY"],
-    api_version = config["alpaca"]["VERSION"]
-)
 
 
 def time_formatter(time_stamp, time_format=None):
@@ -138,19 +116,41 @@ def sort_returns(rets, num):
     return np.array(ins), np.array(outs)
 
 
-def submit_buy_order(ticker, qty, transaction_side, ttype, time_in_force):
-    """
+def submit_order(api_reference, ticker, qty, transaction_side, ttype, time_in_force):
+    """Submit an order using a reference to the Alpaca API.
 
-    :param ticker:
-    :param qty:
-    :param transaction_side:
-    :param ttype:
-    :param time_in_force:
+    :param api_reference: An instance of the Aplaca API
+    :param ticker: Ticker symbol to trade
+    :param qty: Number of shares to trade
+    :param transaction_side: Buy or sell
+    :param ttype: Order type (market, limit, stop, or stop_limit)
+    :param time_in_force: day, gtc, opg, cls, ioc, or fok
     :return:
     """
-    global api
-    return api.submit_order(ticker, qty, transaction_side, ttype, time_in_force)
+    if not api_reference or api_reference is None:
+        raise ValueError("Invalid API reference")
 
+    if not ticker or ticker is None:
+        raise ValueError("Invalid ticker")
+
+    if qty is None or len(qty) < 1:
+        raise ValueError("Invalid qty")
+
+    if not transaction_side or transaction_side not in ["buy", "sell"]:
+        raise ValueError("Invalid transaction_side")
+
+    if not ttype or ttype not in ["market", "limit", "stop", "stop_limit"]:
+        raise ValueError("Invalid ttype")
+
+    if not time_in_force or time_in_force not in ["day", "gtc", "opg", "cls", "ioc", "fok"]:
+        raise ValueError("Invalid time_in_force")
+
+    try:
+        result = api_reference.submit_order(ticker, qty, transaction_side, ttype, time_in_force)
+    except tradeapi.rest.APIError:
+        raise tradeapi.rest.APIError("[!] Unable to submit {} order for {}.".format(str(transaction_side), str(ticker)))
+    else:
+        return result
 
 def set_candlestick_df(bars):
     """Given a collection of candlestick bars, return a dataframe.
@@ -245,5 +245,5 @@ def df2csv(dataframe, ticker):
         dataframe.to_csv(datafile, index=False)
     except FileExistsError:
         raise FileExistsError("Invalid datafile.")
-    finally:
+    else:
         print("File saved:\t{}".format(datafile))
