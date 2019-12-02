@@ -237,13 +237,18 @@ def df2csv(dataframe, ticker):
     if dataframe is None:
         raise EmptyDataError("Dataframe cannot be empty.")
     if not ticker or ticker is None:
-        raise ValueError("Invalid ticker value.")
+        raise ValueError("[!] Invalid ticker value.")
 
     datafile = os.path.relpath("data/{}_data_{}.csv".format(ticker, time.time()))
 
     try:
         dataframe.to_csv(datafile, index=False)
-    except FileExistsError:
-        raise FileExistsError("Invalid datafile.")
-    else:
-        print("File saved:\t{}".format(datafile))
+    except FileNotFoundError:
+        print("[?] Retrying one directory level up.")
+        datafile = os.path.relpath("../data/{}_data_{}.csv".format(ticker, time.time()))
+        try:
+            dataframe.to_csv(datafile, index=False)
+        except FileNotFoundError:
+            raise FileNotFoundError("[!] Unable to save dataframe to CSV file.")
+    finally:
+        print("[+] File saved:\t{}".format(datafile))
