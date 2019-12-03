@@ -3,11 +3,11 @@
 from pandas.errors import EmptyDataError
 from finta import TA
 
-class IndicatorGetterException(Exception):
+class IndicatorException(Exception):
     pass
 
 
-class IndicatorGetter:
+class Indicator:
 
     def __init__(self):
         pass
@@ -24,7 +24,7 @@ class IndicatorGetter:
 
         result = TA.SMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -39,7 +39,7 @@ class IndicatorGetter:
 
         result = TA.SMM(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -54,7 +54,7 @@ class IndicatorGetter:
 
         result = TA.SSMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -69,7 +69,7 @@ class IndicatorGetter:
 
         result = TA.EMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -84,7 +84,7 @@ class IndicatorGetter:
 
         result = TA.DEMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -99,7 +99,7 @@ class IndicatorGetter:
 
         result = TA.TEMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -114,7 +114,7 @@ class IndicatorGetter:
 
         result = TA.TRIMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -129,7 +129,7 @@ class IndicatorGetter:
 
         result = TA.TRIX(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -144,7 +144,7 @@ class IndicatorGetter:
 
         result = TA.VAMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -163,7 +163,7 @@ class IndicatorGetter:
 
         result = TA.ER(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -178,7 +178,7 @@ class IndicatorGetter:
 
         result = TA.KAMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -193,7 +193,7 @@ class IndicatorGetter:
 
         result = TA.ZLEMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -208,7 +208,7 @@ class IndicatorGetter:
 
         result = TA.WMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -223,7 +223,7 @@ class IndicatorGetter:
 
         result = TA.HMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -238,7 +238,7 @@ class IndicatorGetter:
 
         result = TA.EVWMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -253,7 +253,7 @@ class IndicatorGetter:
 
         result = TA.VWAP(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -268,7 +268,7 @@ class IndicatorGetter:
 
         result = TA.SMMA(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -283,7 +283,7 @@ class IndicatorGetter:
 
         result = TA.MACD(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -298,7 +298,7 @@ class IndicatorGetter:
 
         result = TA.PPO(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -313,7 +313,7 @@ class IndicatorGetter:
 
         result = TA.VW_MACD(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -328,7 +328,7 @@ class IndicatorGetter:
 
         result = TA.EV_MACD(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -343,7 +343,7 @@ class IndicatorGetter:
 
         result = TA.MOM(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -358,7 +358,7 @@ class IndicatorGetter:
 
         result = TA.ROC(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -373,7 +373,7 @@ class IndicatorGetter:
 
         result = TA.RSI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -388,7 +388,7 @@ class IndicatorGetter:
 
         result = TA.IFT_RSI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -403,7 +403,7 @@ class IndicatorGetter:
 
         result = TA.TR(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -418,7 +418,7 @@ class IndicatorGetter:
 
         result = TA.ATR(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -433,7 +433,7 @@ class IndicatorGetter:
 
         result = TA.SAR(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -448,7 +448,7 @@ class IndicatorGetter:
 
         result = TA.BBANDS(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -463,7 +463,7 @@ class IndicatorGetter:
 
         result = TA.BBWIDTH(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -478,7 +478,7 @@ class IndicatorGetter:
 
         result = TA.PERCENT_B(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -493,7 +493,7 @@ class IndicatorGetter:
 
         result = TA.KC(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -508,7 +508,7 @@ class IndicatorGetter:
 
         result = TA.DO(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -523,7 +523,7 @@ class IndicatorGetter:
 
         result = TA.DMI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -538,7 +538,7 @@ class IndicatorGetter:
 
         result = TA.ADX(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -553,7 +553,7 @@ class IndicatorGetter:
 
         result = TA.PIVOT(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -568,7 +568,7 @@ class IndicatorGetter:
 
         result = TA.PIVOT_FIB(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -583,7 +583,7 @@ class IndicatorGetter:
 
         result = TA.STOCH(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -598,7 +598,7 @@ class IndicatorGetter:
 
         result = TA.STOCHD(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -613,7 +613,7 @@ class IndicatorGetter:
 
         result = TA.STOCHRSI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -628,7 +628,7 @@ class IndicatorGetter:
 
         result = TA.WILLIAMS(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -643,7 +643,7 @@ class IndicatorGetter:
 
         result = TA.UO(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -658,7 +658,7 @@ class IndicatorGetter:
 
         result = TA.AO(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -673,7 +673,7 @@ class IndicatorGetter:
 
         result = TA.MI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -688,7 +688,7 @@ class IndicatorGetter:
 
         result = TA.VORTEX(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -703,7 +703,7 @@ class IndicatorGetter:
 
         result = TA.KST(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -718,7 +718,7 @@ class IndicatorGetter:
 
         result = TA.TSI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -733,7 +733,7 @@ class IndicatorGetter:
 
         result = TA.TP(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -748,7 +748,7 @@ class IndicatorGetter:
 
         result = TA.ADL(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -763,7 +763,7 @@ class IndicatorGetter:
 
         result = TA.CHAIKIN(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -778,7 +778,7 @@ class IndicatorGetter:
 
         result = TA.MFI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -793,7 +793,7 @@ class IndicatorGetter:
 
         result = TA.OBV(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -808,7 +808,7 @@ class IndicatorGetter:
 
         result = TA.WOBV(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -823,7 +823,7 @@ class IndicatorGetter:
 
         result = TA.VZO(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -838,7 +838,7 @@ class IndicatorGetter:
 
         result = TA.PZO(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -853,7 +853,7 @@ class IndicatorGetter:
 
         result = TA.EFI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -868,7 +868,7 @@ class IndicatorGetter:
 
         result = TA.CFI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -883,7 +883,7 @@ class IndicatorGetter:
 
         result = TA.EBBP(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -898,7 +898,7 @@ class IndicatorGetter:
 
         result = TA.EMV(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -913,7 +913,7 @@ class IndicatorGetter:
 
         result = TA.CCI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -928,7 +928,7 @@ class IndicatorGetter:
 
         result = TA.COPP(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -943,7 +943,7 @@ class IndicatorGetter:
 
         result = TA.BASP(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -958,7 +958,7 @@ class IndicatorGetter:
 
         result = TA.BASPN(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -973,7 +973,7 @@ class IndicatorGetter:
 
         result = TA.CMO(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -988,7 +988,7 @@ class IndicatorGetter:
 
         result = TA.CHANDELIER(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1003,7 +1003,7 @@ class IndicatorGetter:
 
         result = TA.QSTICK(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1018,7 +1018,7 @@ class IndicatorGetter:
 
         result = TA.TMF(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1033,7 +1033,7 @@ class IndicatorGetter:
 
         result = TA.WTO(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1048,7 +1048,7 @@ class IndicatorGetter:
 
         result = TA.FISH(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1063,7 +1063,7 @@ class IndicatorGetter:
 
         result = TA.ICHIMOKU(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1078,7 +1078,7 @@ class IndicatorGetter:
 
         result = TA.APZ(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1093,7 +1093,7 @@ class IndicatorGetter:
 
         result = TA.VR(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1108,7 +1108,7 @@ class IndicatorGetter:
 
         result = TA.SQZMI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1123,7 +1123,7 @@ class IndicatorGetter:
 
         result = TA.VPT(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1138,7 +1138,7 @@ class IndicatorGetter:
 
         result = TA.FVE(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1153,7 +1153,7 @@ class IndicatorGetter:
 
         result = TA.VFI(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
 
     @staticmethod
@@ -1168,5 +1168,5 @@ class IndicatorGetter:
 
         result = TA.MSD(data)
         if result is None:
-            raise IndicatorGetterException
+            raise IndicatorException
         return result
