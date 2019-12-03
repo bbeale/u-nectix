@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from src.indicator_getter import IndicatorGetter as IG, IndicatorGetterException as IGError
+from src.finta_interface import Indicator as IG, IndicatorException as IError
 from util import time_formatter, set_candlestick_df
 from requests.exceptions import HTTPError
 from pandas.errors import EmptyDataError
 import src.twitter_interface as twitter
 import time
 
-class IndicatorException(Exception):
+class IndicatorCollectionException(Exception):
     pass
 
 
-class Indicators:
+class IndicatorCollection:
 
     def __init__(self, alpaca_api_interface, dataframe=None):
 
@@ -35,8 +35,8 @@ class Indicators:
                 self.dataframe[ticker] = self.get_ticker_indicators(ticker, backdate=backdate)
             except EmptyDataError:
                 raise EmptyDataError
-            except IndicatorException:
-                raise IndicatorException
+            except IError:
+                raise IError
             else:
                 continue
         return self.dataframe
@@ -185,7 +185,7 @@ class Indicators:
 
             # TODO: Add Twitter / sentiment scores, empyrical data, other fundamentals
 
-        except IGError:
+        except IError:
             print("[?] Failed to grab one or more indicator for {}".format(ticker))
         else:
             return data
