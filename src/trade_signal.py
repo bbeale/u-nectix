@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from src.indicator_getter import IndicatorGetter as IG, IndicatorGetterException as IGError
+from src.finta_interface import Indicator as ind, IndicatorException as IError
 
 class TradeSignalException(Exception):
     pass
@@ -19,9 +19,9 @@ class TradeSignal:
         :return:
         """
         try:
-            raw_macd = IG.get_macd(dataframe)
-        except IGError:
-            raise IGError("[!] Failed to retrieve raw MACD values")
+            raw_macd = ind.get_macd(dataframe)
+        except IError:
+            raise IError("[!] Failed to retrieve raw MACD values")
 
         try:
             macd_buysignal = raw_macd["MACD"].iloc[-1] < 0 and min(raw_macd["MACD"].iloc[-4:-2]) < raw_macd["SIGNAL"].iloc[-1] and raw_macd["MACD"].iloc[-1] > \
@@ -39,9 +39,9 @@ class TradeSignal:
         :return:
         """
         try:
-            raw_mfi = IG.get_mfi(dataframe)
-        except IGError:
-            raise IGError("[!] Failed to retrieve raw MFI values")
+            raw_mfi = ind.get_mfi(dataframe)
+        except IError:
+            raise IError("[!] Failed to retrieve raw MFI values")
 
         try:
             mfi_buysignal = raw_mfi.iloc[-1] > 10 and min(raw_mfi.iloc[-4:-2]) <= 10
@@ -58,9 +58,9 @@ class TradeSignal:
         :return:
         """
         try:
-            raw_vzo = IG.get_vzo(dataframe)
-        except IGError:
-            raise IGError("[!] Failed to retrieve raw VZO values")
+            raw_vzo = ind.get_vzo(dataframe)
+        except IError:
+            raise IError("[!] Failed to retrieve raw VZO values")
 
         try:
             vzo_buysignal = raw_vzo.iloc[-1] > -40 and min(raw_vzo.iloc[-4:-2]) <= -40
@@ -77,9 +77,9 @@ class TradeSignal:
         :return:
         """
         try:
-            raw_stoch = IG.get_stoch(dataframe)
-        except IGError:
-            raise IGError("[!] Failed to retrieve raw stochastic oscillator values")
+            raw_stoch = ind.get_stoch(dataframe)
+        except IError:
+            raise IError("[!] Failed to retrieve raw stochastic oscillator values")
 
         try:
             stoch_buysignal = raw_stoch.iloc[-1] > 10 and min(raw_stoch.iloc[-4:-2]) <= 10
