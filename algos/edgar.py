@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from src.asset_selector import AssetSelector
-from src.indicators import Indicators
+from src.indicator_collection import IndicatorCollection
 from src.edgar_interface import EdgarInterface
 from src.twitter_interface import TwitterInterface
 from src.sentiment_analysis import SentimentAnalysis as Sent
@@ -15,7 +15,7 @@ def run(alpaca_api, edgar_token):
     trading         = False
     trading_symbol  = None
     assets          = AssetSelector(alpaca_api, edgar_token=edgar_token).sec_filings(64, 1)
-    indicators      = Indicators(alpaca_api, assets).get_all_asset_indicators(backdate=time_formatter(time.time() - (604800 * 54)))
+    indicators      = IndicatorCollection(alpaca_api, assets).get_all_asset_indicators(backdate=time_formatter(time.time() - (604800 * 54)))
     edgar           = EdgarInterface(edgar_token, indicators).get_edgar_signals()
 
     # TODO: SEC form sentiment analysis
