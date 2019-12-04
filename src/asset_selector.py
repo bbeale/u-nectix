@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from util import bullish_candlestick_patterns, time_formatter, num_bars, set_candlestick_df
 from src.trade_signal import TradeSignal as TS, TradeSignalException as TSError
+from src.finta_interface import Indicator as indicators
 from src.edgar_interface import EdgarInterface
 from requests.exceptions import HTTPError
 import inspect
@@ -17,8 +18,51 @@ class CandlestickException(AssetException):
 class DataframeException(AssetException):
     pass
 
-
 class AssetSelector:
+
+    @classmethod
+    def extract_bar_data(cls, bar_object, symbol):
+        """Given a bar object from the Alpaca API, return a stripped down dataframe in ohlcv format.
+
+        :param bar_object:
+        :param symbol:
+        :return:
+        """
+        if not bar_object or bar_object is None:
+            raise ValueError("[!] Bar object cannot be None.")
+
+        if not symbol or symbol is None:
+            raise ValueError("[!] Must give a valid ticker symbol.")
+
+        bars = bar_object[symbol]
+
+        try:
+            df = set_candlestick_df(bars)
+        except ValueError:
+            raise ValueError
+        else:
+            return df
+
+    @classmethod
+    def candle_pattern_direction(cls, dataframe):
+        """Given a series, get the candlestick pattern of the last 3 periods.
+
+        :param dataframe:
+        :return:
+        """
+        if dataframe is None:
+            raise ValueError("[!] Dataframe cannot be None.")
+
+        pattern = bullish_candlestick_patterns(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
+        direction = None
+
+        if pattern in ["hammer", "inverseHammer"]:
+            direction = "bull"
+
+        if pattern in ["bullishEngulfing", "piercingLine", "morningStar", "threeWhiteSoldiers"]:
+            direction = "bear"
+
+        return direction, pattern
 
     def __init__(self, alpaca_api_interface, backdate=None, edgar_token=None):
 
@@ -42,13 +86,10 @@ class AssetSelector:
         self.bears              = dict()
         self.recent_filings     = dict()
         self.assets_by_filing   = dict()
+        self.top_gainers        = dict()
+        self.top_losers         = dict()
 
         self.populate()
-
-    def populate(self):
-
-        self.get_assets()
-        self.extract_tradeable_assets(self.raw_assets)
 
     def get_assets(self):
         """Get assets from Alpaca API.
@@ -101,52 +142,8 @@ class AssetSelector:
         finally:
             return result
 
-    @classmethod
-    def extract_bar_data(cls, bar_object, symbol):
-        """Given a bar object from the Alpaca API, return a stripped down dataframe in ohlcv format.
-
-        :param bar_object:
-        :param symbol:
-        :return:
-        """
-        if not bar_object or bar_object is None:
-            raise ValueError("[!] Bar object cannot be None.")
-
-        if not symbol or symbol is None:
-            raise ValueError("[!] Must give a valid ticker symbol.")
-
-        bars = bar_object[symbol]
-
-        try:
-            df = set_candlestick_df(bars)
-        except ValueError:
-            raise ValueError
-        else:
-            return df
-
-    @classmethod
-    def candle_pattern_direction(cls, dataframe):
-        """Given a series, get the candlestick pattern of the last 3 periods.
-
-        :param dataframe:
-        :return:
-        """
-        if dataframe is None:
-            raise ValueError("[!] Dataframe cannot be None.")
-
-        pattern = bullish_candlestick_patterns(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
-        direction = None
-
-        if pattern in ["hammer", "inverseHammer"]:
-            direction = "bull"
-
-        if pattern in ["bullishEngulfing", "piercingLine", "morningStar", "threeWhiteSoldiers"]:
-            direction = "bear"
-
-        return direction, pattern
-
-    def evaluate_candlesticks(self, asset_list, fname, barcount, poolsize=5):
-        """Given a list of assets, evaluate which ones are bullish or bearish and return a sample of each.
+    def _filter_bullish_assets(self, asset_list, fname, barcount, poolsize=5):
+        """Given a list of assets, evaluate which ones are bullish and return a sample of each.
 
         :param asset_list:
         :param fname:
@@ -169,7 +166,7 @@ class AssetSelector:
         calling_fn = fname
         results = dict()
         print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD?".ljust(10), "MFI?".ljust(10), "VZO?".ljust(10), "Stoch?".ljust(10), "Pattern")
-        print("{:<30}".format("–" * 100))
+        print("{:<30}".format("–" * 70))
 
         for i in asset_list:
             if len(results.keys()) == poolsize:
@@ -186,26 +183,155 @@ class AssetSelector:
 
                     num_criteria = 0
                     try:
-                        macd_buysignal = TS.macd_buy(df)
-                        mfi_buysignal = TS.mfi_buy(df)
-                        vzo_buysignal = TS.vzo_buy(df)
-                        stoch_buysignal = TS.stoch_buy(df)
+                        macd_signal = TS.macd_buy(df)
+                        mfi_signal = TS.mfi_buy(df)
+                        vzo_signal = TS.vzo_buy(df)
+                        stoch_signal = TS.stoch_buy(df)
                     except TSError:
                         raise TSError("[!] Failed to compute one or more expected buy signals.")
 
-                    if mfi_buysignal:
+                    if mfi_signal:
                         num_criteria += 1
 
-                    if vzo_buysignal:
+                    if vzo_signal:
                         num_criteria += 1
 
-                    if stoch_buysignal:
+                    if stoch_signal:
                         num_criteria += 1
 
-                    if macd_buysignal and num_criteria >= 1:
+                    if macd_signal and num_criteria >= 1:
                         # display the result if it meets criteria
                         results[i.symbol] = df
-                        print(i.symbol.ljust(10), "${:.2f}".format(df["close"].iloc[-1]).ljust(10), "${:.2f}".format(df["close"].iloc[-1] - df["close"].iloc[-2]).ljust(10), "{:.2f}%".format(df["close"].pct_change().iloc[-1] - df["close"].pct_change().iloc[-2]).ljust(10), str(macd_buysignal).ljust(10), str(mfi_buysignal).ljust(10), str(vzo_buysignal).ljust(10), str(stoch_buysignal).ljust(10), str(pattern))
+                        print(i.symbol.ljust(10), "${:.2f}".format(df["close"].iloc[-1]).ljust(10), "${:.2f}".format(df["close"].iloc[-1] - df["close"].iloc[-2]).ljust(10), "{:.2f}%".format(df["close"].pct_change().iloc[-1] - df["close"].pct_change().iloc[-2]).ljust(10), str(macd_signal).ljust(10), str(mfi_signal).ljust(10), str(vzo_signal).ljust(10), str(stoch_signal).ljust(10), str(pattern))
+
+    def _filter_bearish_assets(self, asset_list, fname, barcount, poolsize=5):
+        """Given a list of assets, evaluate which ones are bearish and return a sample of each.
+
+        :param asset_list:
+        :param fname:
+        :param barcount:
+        :param poolsize:
+        :return:
+        """
+        if not asset_list or asset_list is None:
+            raise ValueError("[!] Asset list cannot be None.")
+
+        if not fname or fname is None:
+            raise ValueError("[!] Name of calling entity required.")
+
+        if not barcount or barcount is None:
+            barcount = 64
+
+        if not poolsize or poolsize is None or poolsize is 0:
+            poolsize = 5
+
+        calling_fn = fname
+        results = dict()
+        print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD?".ljust(10), "MFI?".ljust(10), "VZO?".ljust(10), "Stoch?".ljust(10), "Pattern")
+        print("{:<30}".format("–" * 70))
+
+        for i in asset_list:
+            if len(results.keys()) == poolsize:
+                return results
+
+            try:
+                df, eval_result, pattern = self.evaluate_candlestick(i, barcount)
+            except DataframeException:
+                continue
+            except CandlestickException:
+                continue
+            else:
+                if eval_result in calling_fn and len(results.keys()) < poolsize:
+
+                    num_criteria = 0
+                    try:
+                        macd_signal = TS.macd_sell(df)
+                        mfi_signal = TS.mfi_sell(df)
+                        vzo_signal = TS.vzo_sell(df)
+                        stoch_signal = TS.stoch_sell(df)
+                    except TSError:
+                        raise TSError("[!] Failed to compute one or more expected sell signals.")
+
+                    if mfi_signal:
+                        num_criteria += 1
+
+                    if vzo_signal:
+                        num_criteria += 1
+
+                    if stoch_signal:
+                        num_criteria += 1
+
+                    if macd_signal and num_criteria >= 1:
+                        # display the result if it meets criteria
+                        results[i.symbol] = df
+                        print(i.symbol.ljust(10), "${:.2f}".format(df["close"].iloc[-1]).ljust(10), "${:.2f}".format(df["close"].iloc[-1] - df["close"].iloc[-2]).ljust(10), "{:.2f}%".format(df["close"].pct_change().iloc[-1] - df["close"].pct_change().iloc[-2]).ljust(10), str(macd_signal).ljust(10), str(mfi_signal).ljust(10), str(vzo_signal).ljust(10), str(stoch_signal).ljust(10), str(pattern))
+
+    def _filter_top_gainers(self):
+        """Use Polygon endpoint to get a list of top 20 "gainers".
+
+            :return:
+            """
+        print("Gainers".center(45))
+        print()
+        print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD Buy?".ljust(10),
+            "MFI".ljust(10), "VZO".ljust(10), "Stochastic Oscillator")
+        print("{:<30}".format("–" * 45))
+
+        gainers = self.api.polygon.gainers_losers()
+
+        res = []
+        for symbol in range(len(gainers)):
+
+            ticker = gainers[symbol].ticker
+            bars = self.api.get_barset(ticker, "1D", after=self.backdate)
+            dataframe = self.extract_bar_data(bars, ticker)
+            _macd = indicators.get_macd(dataframe)
+            macd = _macd["MACD"]
+            signal = _macd["SIGNAL"]
+            mfi = indicators.get_mfi(dataframe)
+            vzo = indicators.get_vzo(dataframe)
+            stoch = indicators.get_stoch(dataframe)
+
+            # calculate the MACD buy signal, i.e. if the most recent macd < 0 and < the most recent signal, and the previous MACDs were below the signal
+            try:
+                buysignal = macd.iloc[-1] < 0 and min(macd.iloc[-4:-2]) <= signal.iloc[-1] and macd.iloc[-1] > \
+                            signal.iloc[-1]
+            except IndexError:
+                continue
+
+            # calculate mfi buy signal via bullish 10% crossover
+            try:
+                vzo_buysignal = mfi.iloc[-1] > 10 and min(mfi.iloc[-4:-2]) <= 10
+            except IndexError:
+                continue
+
+                # calculate the VZO buy signal -- look for bullish -40% crossover
+            try:
+                mfi_buysignal = vzo.iloc[-1] > -40 and min(vzo.iloc[-4:-2]) <= -40
+            except IndexError:
+                continue
+
+            # calculate stochastic buy signal via bullish 10% crossover
+            try:
+                stoch_buysignal = stoch.iloc[-1] > 10 and min(stoch.iloc[-4:-2]) <= 10
+            except IndexError:
+                continue
+
+            print(self.api.polygon.gainers_losers()[symbol].ticker.ljust(10),
+                "${:.2f}".format(self.api.polygon.gainers_losers()[symbol].lastTrade["p"]).ljust(10),
+                "${:.2f}".format(self.api.polygon.gainers_losers()[symbol].todaysChange).ljust(10),
+                "{:.2f}%".format(self.api.polygon.gainers_losers()[symbol].todaysChangePerc).ljust(10),
+                str(buysignal).ljust(10),
+                str(mfi_buysignal).ljust(10),
+                str(vzo_buysignal).ljust(10),
+                str(stoch_buysignal).ljust(10),
+                "{:.2f}".format(stoch.iloc[-1]).ljust(10)
+            )
+            res.append(self.api.polygon.gainers_losers()[symbol])
+        return res
+
+    def _filter_top_losers(self):
+        raise NotImplementedError
 
     def evaluate_candlestick(self, asset, barcount):
         """Return the candlestick pattern and dataframe of an asset if a bullish or bearish pattern is detected among the last three closing prices.
@@ -243,9 +369,8 @@ class AssetSelector:
         :param poolsize:
         :return:
         """
-        self.bulls = self.evaluate_candlesticks(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
+        self.bulls = self._filter_bullish_assets(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
 
-        # return bulls
         return self.bulls
 
     def bearish_candlesticks(self, barcount=64, poolsize=5):
@@ -255,10 +380,28 @@ class AssetSelector:
         :param poolsize:
         :return:
         """
-        self.bears = self.evaluate_candlesticks(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
+        self.bears = self._filter_bearish_assets(self.tradeable_assets, fname=inspect.stack()[0][3], barcount=barcount, poolsize=poolsize)
 
-        # return bears
         return self.bears
+
+    def top_gainers(self):
+        """Return assets with a bullish pattern of closing prices over a given period.
+
+        :return:
+        """
+        self.top_gainers = self._filter_top_gainers()
+
+        return self.top_gainers
+
+    def top_losers(self):
+        """Return assets with a bearish pattern of closing prices over a given period.
+
+        :return:
+        """
+        self.top_losers = self._filter_top_losers()
+
+        # return self.top_losers
+        raise NotImplementedError
 
     def sec_filings(self, barcount=64, poolsize=5, form_type="8-K", backdate=None):
         """Return tradeable asets with recent SEC filings.
@@ -340,3 +483,8 @@ class AssetSelector:
 
             df = self.extract_bar_data(barset, i.symbol)
             self.assets_by_filing[i.symbol] = df
+
+    def populate(self):
+
+        self.get_assets()
+        self.extract_tradeable_assets(self.raw_assets)
