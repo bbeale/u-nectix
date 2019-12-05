@@ -165,6 +165,8 @@ class AssetSelector:
 
         calling_fn = fname
         results = dict()
+        print("Bulls".center(45))
+        print()
         print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD?".ljust(10), "MFI?".ljust(10), "VZO?".ljust(10), "Stoch?".ljust(10), "Pattern")
         print("{:<30}".format("–" * 70))
 
@@ -227,6 +229,8 @@ class AssetSelector:
 
         calling_fn = fname
         results = dict()
+        print("Bears".center(45))
+        print()
         print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD?".ljust(10), "MFI?".ljust(10), "VZO?".ljust(10), "Stoch?".ljust(10), "Pattern")
         print("{:<30}".format("–" * 70))
 
@@ -275,7 +279,7 @@ class AssetSelector:
         print()
         print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD Buy?".ljust(10),
             "MFI".ljust(10), "VZO".ljust(10), "Stochastic")
-        print("{:<30}".format("–" * 45))
+        print("{:<30}".format("–" * 70))
 
         gainers = self.api.polygon.gainers_losers()
 
@@ -316,7 +320,7 @@ class AssetSelector:
         print()
         print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD Buy?".ljust(10),
             "MFI".ljust(10), "VZO".ljust(10), "Stochastic")
-        print("{:<30}".format("–" * 45))
+        print("{:<30}".format("–" * 70))
 
         losers = self.api.polygon.gainers_losers("losers")
 
