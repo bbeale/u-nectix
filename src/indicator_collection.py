@@ -5,6 +5,7 @@ from util import time_formatter, set_candlestick_df
 from requests.exceptions import HTTPError
 from pandas.errors import EmptyDataError
 import src.twitter_interface as twitter
+import inspect
 import time
 
 class IndicatorCollectionException(Exception):
@@ -28,6 +29,7 @@ class IndicatorCollection:
         :return: A pandas dataframe of ticker dataframes for each asset.
         """
         if not backdate or backdate is None:
+            print("[Debug] Backdate debug", inspect.stack()[0][3])
             backdate = time_formatter(time.time() - (604800 * 13))
 
         for ticker in self.dataframe.keys():
@@ -52,6 +54,7 @@ class IndicatorCollection:
             raise ValueError("[!] Invalid ticker value")
 
         if not backdate or backdate is None:
+            print("[Debug] Backdate debug", inspect.stack()[0][3])
             backdate = time_formatter(time.time() - (604800 * 13))
 
         bars = self.get_bars(ticker, backdate)
@@ -201,6 +204,7 @@ class IndicatorCollection:
             raise ValueError("[!] Invalid ticker value")
 
         if not backdate or backdate is None:
+            print("[Debug] Backdate debug", inspect.stack()[0][3])
             backdate = time_formatter(time.time() - (604800 * 13))
         bars = None
         try:
