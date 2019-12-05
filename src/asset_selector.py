@@ -274,7 +274,7 @@ class AssetSelector:
         print("Gainers".center(45))
         print()
         print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD Buy?".ljust(10),
-            "MFI".ljust(10), "VZO".ljust(10), "Stochastic Oscillator")
+            "MFI".ljust(10), "VZO".ljust(10), "Stochastic")
         print("{:<30}".format("–" * 45))
 
         gainers = self.api.polygon.gainers_losers()
@@ -285,53 +285,68 @@ class AssetSelector:
             ticker = gainers[symbol].ticker
             bars = self.api.get_barset(ticker, "1D", after=self.backdate)
             dataframe = self.extract_bar_data(bars, ticker)
-            _macd = indicators.get_macd(dataframe)
-            macd = _macd["MACD"]
-            signal = _macd["SIGNAL"]
-            mfi = indicators.get_mfi(dataframe)
-            vzo = indicators.get_vzo(dataframe)
-            stoch = indicators.get_stoch(dataframe)
 
-            # calculate the MACD buy signal, i.e. if the most recent macd < 0 and < the most recent signal, and the previous MACDs were below the signal
+            # buy signals
             try:
-                buysignal = macd.iloc[-1] < 0 and min(macd.iloc[-4:-2]) <= signal.iloc[-1] and macd.iloc[-1] > \
-                            signal.iloc[-1]
-            except IndexError:
-                continue
-
-            # calculate mfi buy signal via bullish 10% crossover
-            try:
-                vzo_buysignal = mfi.iloc[-1] > 10 and min(mfi.iloc[-4:-2]) <= 10
-            except IndexError:
-                continue
-
-                # calculate the VZO buy signal -- look for bullish -40% crossover
-            try:
-                mfi_buysignal = vzo.iloc[-1] > -40 and min(vzo.iloc[-4:-2]) <= -40
-            except IndexError:
-                continue
-
-            # calculate stochastic buy signal via bullish 10% crossover
-            try:
-                stoch_buysignal = stoch.iloc[-1] > 10 and min(stoch.iloc[-4:-2]) <= 10
-            except IndexError:
-                continue
+                macd_signal = TS.macd_buy(dataframe)
+                mfi_signal = TS.mfi_buy(dataframe)
+                vzo_signal = TS.vzo_buy(dataframe)
+                stoch_signal = TS.stoch_buy(dataframe)
+            except TSError:
+                raise TSError("[!] Failed to compute one or more expected buy signals.")
 
             print(self.api.polygon.gainers_losers()[symbol].ticker.ljust(10),
                 "${:.2f}".format(self.api.polygon.gainers_losers()[symbol].lastTrade["p"]).ljust(10),
                 "${:.2f}".format(self.api.polygon.gainers_losers()[symbol].todaysChange).ljust(10),
                 "{:.2f}%".format(self.api.polygon.gainers_losers()[symbol].todaysChangePerc).ljust(10),
-                str(buysignal).ljust(10),
-                str(mfi_buysignal).ljust(10),
-                str(vzo_buysignal).ljust(10),
-                str(stoch_buysignal).ljust(10),
-                "{:.2f}".format(stoch.iloc[-1]).ljust(10)
+                str(macd_signal).ljust(10),
+                str(mfi_signal).ljust(10),
+                str(vzo_signal).ljust(10),
+                str(stoch_signal).ljust(10)
             )
             res.append(self.api.polygon.gainers_losers()[symbol])
         return res
 
     def _filter_top_losers(self):
-        raise NotImplementedError
+        """Use Polygon endpoint to get a list of top 20 "losers".
+
+        :return:
+        """
+        print("Losers".center(45))
+        print()
+        print("Ticker".ljust(10), "Last".ljust(10), "Change".ljust(10), "% Change".ljust(10), "MACD Buy?".ljust(10),
+            "MFI".ljust(10), "VZO".ljust(10), "Stochastic")
+        print("{:<30}".format("–" * 45))
+
+        losers = self.api.polygon.gainers_losers("losers")
+
+        res = []
+        for symbol in range(len(losers)):
+
+            ticker = losers[symbol].ticker
+            bars = self.api.get_barset(ticker, "1D", after=self.backdate)
+            dataframe = self.api.extract_bar_data(bars, ticker)
+
+            # sell signals
+            try:
+                macd_signal = TS.macd_sell(dataframe)
+                mfi_signal = TS.mfi_sell(dataframe)
+                vzo_signal = TS.vzo_sell(dataframe)
+                stoch_signal = TS.stoch_sell(dataframe)
+            except TSError:
+                raise TSError("[!] Failed to compute one or more expected sell signals.")
+
+            print(self.api.polygon.gainers_losers("losers")[symbol].ticker.ljust(10),
+                "${:.2f}".format(self.api.polygon.gainers_losers("losers")[symbol].lastTrade["p"]).ljust(10),
+                "${:.2f}".format(self.api.polygon.gainers_losers("losers")[symbol].todaysChange).ljust(10),
+                "{:.2f}%".format(self.api.polygon.gainers_losers("losers")[symbol].todaysChangePerc).ljust(10),
+                str(macd_signal).ljust(10),
+                str(mfi_signal).ljust(10),
+                str(vzo_signal).ljust(10),
+                str(stoch_signal).ljust(10)
+            )
+            res.append(self.api.polygon.gainers_losers("losers")[symbol])
+        return res
 
     def _filter_undervalued(self):
         """
@@ -413,8 +428,7 @@ class AssetSelector:
         """
         self.top_losers = self._filter_top_losers()
 
-        # return self.top_losers
-        raise NotImplementedError
+        return self.top_losers
 
     def undervalued(self):
         raise NotImplementedError
