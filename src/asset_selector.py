@@ -157,8 +157,8 @@ class AssetSelector:
         if not fname or fname is None:
             raise ValueError("[!] Name of calling entity required.")
 
-        if not barcount or barcount is None:
-            barcount = 64
+        # if not barcount or barcount is None:
+        #     barcount = 64
 
         if not poolsize or poolsize is None or poolsize is 0:
             poolsize = 5
@@ -333,6 +333,19 @@ class AssetSelector:
     def _filter_top_losers(self):
         raise NotImplementedError
 
+    def _filter_undervalued(self):
+        """
+            https://medium.com/datadriveninvestor/how-i-use-this-free-api-to-find-undervalued-stocks-6574b9a3f2fe
+
+                and
+
+            https://medium.com/automation-generation/trading-on-the-edge-how-this-free-api-helps-me-find-undervalued-stocks-7ec7b904ee37
+        """
+        raise NotImplementedError
+
+    def _filter_overvalued(self):
+        raise NotImplementedError
+
     def evaluate_candlestick(self, asset, barcount):
         """Return the candlestick pattern and dataframe of an asset if a bullish or bearish pattern is detected among the last three closing prices.
 
@@ -350,8 +363,8 @@ class AssetSelector:
         if barset is None:
             raise DataframeException("[!] Invalid barset -- cannot be None.")
 
-        if num_bars(barset[asset.symbol], barcount) is False:
-            raise DataframeException("[!] Insufficient data.")
+        # if num_bars(barset[asset.symbol], barcount) is False:
+        #     raise DataframeException("[!] Insufficient data.")
 
         df = self.extract_bar_data(barset, asset.symbol)
 
@@ -401,6 +414,9 @@ class AssetSelector:
         self.top_losers = self._filter_top_losers()
 
         # return self.top_losers
+        raise NotImplementedError
+
+    def undervalued(self):
         raise NotImplementedError
 
     def sec_filings(self, barcount=64, poolsize=5, form_type="8-K", backdate=None):
