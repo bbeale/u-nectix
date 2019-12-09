@@ -437,6 +437,12 @@ class AssetSelector:
     def undervalued(self):
         raise NotImplementedError
 
+    def positive_sentiment_assets(self):
+        raise NotImplementedError
+
+    def negative_sentiment_assets(self):
+        raise NotImplementedError
+
     def sec_filings(self, barcount=64, poolsize=5, form_type="8-K", backdate=None):
         """Return tradeable asets with recent SEC filings.
 
