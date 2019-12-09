@@ -36,4 +36,4 @@
 
 ### Run the script
 
-    `python cryptoconda.py`   
+    `python main.py`   
