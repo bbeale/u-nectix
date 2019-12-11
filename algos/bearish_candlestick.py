@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from src.asset_selector import AssetSelector
-from src.indicator_collection import IndicatorCollection
+from src.indicator_collection import IndicatorCollection as Indicators
 from util import submit_order, time_formatter
 import time
 
@@ -11,7 +11,7 @@ def run(alpaca_api):
     trading_symbol  = None
     trading         = False
     assets          = AssetSelector(alpaca_api, edgar_token=None).bearish_candlesticks(64, 1)
-    indicators      = IndicatorCollection(alpaca_api, assets).get_all_asset_indicators(backdate=time_formatter(time.time() - (604800 * 54)))
+    indicators      = Indicators(alpaca_api, assets).get_all_asset_indicators(backdate=time_formatter(time.time() - (604800 * 54)))
 
     # trade decision here
     for i in indicators.keys():
