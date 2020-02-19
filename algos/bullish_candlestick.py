@@ -1,17 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from src.indicator_collection import Indicators as Indicators
 from src.asset_selector import AssetSelector
-from src.indicator_collection import IndicatorCollection as Indicators
-from util import submit_order, time_formatter
+from src.broker import BrokerException
+from util import time_formatter
 import time
 
-def run(alpaca_api):
+
+def run(broker, args):
+
+    if not broker or broker is None:
+        raise BrokerException("[!] A broker instance is required.")
+    else:
+        broker = broker
 
     # initial trade state
     trading_symbol  = None
     trading         = False
-    assets          = AssetSelector(alpaca_api, edgar_token=None).bullish_candlesticks(64, 1)
-    indicators      = Indicators(alpaca_api, assets).get_all_asset_indicators(backdate=time_formatter(time.time() - (604800 * 54)))
+    # backdate        = time_formatter(time.time() - (604800 * 54))
+    asset_selector  = AssetSelector(broker, args, edgar_token=None)
+    # tickers         = asset_selector.bullish_candlesticks()
+    indicators      = Indicators(broker, args, asset_selector).data
 
     # trade decision here
     for i in indicators.keys():
@@ -20,6 +29,7 @@ def run(alpaca_api):
 
         # do the processing for machine learning and see which one (if any) to trade
         # TODO: implement machine learning
+        print("[debug] Instrument: {}".format(instrument))
 
         if trading_symbol is not None:
             break
@@ -32,11 +42,11 @@ def run(alpaca_api):
         quant = 10
 
         # then submit a buy order
-        submit_order(
-            api_reference=alpaca_api,
-            ticker=trading_symbol,
-            qty=quant,
-            transaction_side="buy",
-            ttype="market",
-            time_in_force="ioc"
-        )
+        # broker.submit_order(
+        #     api_reference=alpaca_api,
+        #     ticker=trading_symbol,
+        #     qty=quant,
+        #     transaction_side="buy",
+        #     ttype="market",
+        #     time_in_force="ioc"
+        # )
