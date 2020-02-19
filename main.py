@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from src.broker import Broker, BrokerException, BrokerValidationException
 from alpaca_trade_api.rest import REST, APIError
-from algos import bullish_candlestick
+from algos import sample_algo
 import configparser
 import argparse
 import sys
@@ -74,7 +74,7 @@ def main(config, args):
     if args.selection_method is None:
         args.selection_method = "bullish_candlestick"
 
-    bullish_candlestick.run(broker, args)
+    sample_algo.run(broker, args)
 
 
 def backtest():
