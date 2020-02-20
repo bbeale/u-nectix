@@ -17,6 +17,7 @@ class Broker(object):
         self.cash = self.trading_account.cash
         self.buying_power = self.trading_account.buying_power
         self.original_cash = self.cash
+        self.original_buying_power = self.buying_power
         self.trading_blocked = self.trading_account.trading_blocked
         self.clock = self.get_clock()
 
