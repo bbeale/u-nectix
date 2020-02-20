@@ -19,6 +19,14 @@ def parse_args():
         type=int,
         required=False,
         help="number of days to backtest")
+    parser.add_argument("-mx", "--max",
+        type=float,
+        required=False,
+        help="max price per share we are willing to accept")
+    parser.add_argument("-mn", "--min",
+        type=float,
+        required=False,
+        help="min price per share we are willing to accept")
     parser.add_argument("-m", "--mode",
         type=str,
         required=False,
@@ -79,6 +87,10 @@ def main(config, args):
         args.selection_method = "bullish_candlestick"
     if args.days is None:
         args.days = 30
+    if args.max is None:
+        args.max = 26
+    if args.min is None:
+        args.min = 6
 
     sample_algo.run(broker, args)
 
