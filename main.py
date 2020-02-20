@@ -14,11 +14,15 @@ def parse_args():
     parser.add_argument("-b", "--backtest",
         type=str,
         required=False,
-        help="backtest")
+        help="run in backtest mode if true, otherwise run in live mode")
+    parser.add_argument("-d", "--days",
+        type=int,
+        required=False,
+        help="number of days to backtest")
     parser.add_argument("-m", "--mode",
         type=str,
         required=False,
-        help="either \"long\" or \"short\"")
+        help="long or short")
     parser.add_argument("-p", "--period",
         type=str,
         required=False,
@@ -73,6 +77,8 @@ def main(config, args):
         args.period = "1D"
     if args.selection_method is None:
         args.selection_method = "bullish_candlestick"
+    if args.days is None:
+        args.days = 30
 
     sample_algo.run(broker, args)
 
