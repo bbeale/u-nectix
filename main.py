@@ -95,15 +95,7 @@ def main(config, args):
     sample_algo.run(broker, args)
 
 
-def backtest():
-    raise NotImplementedError
-
-
 if __name__ == "__main__":
     configuration = configparser.ConfigParser()
     arguments = parse_args()
-
-    if arguments.backtest is not None and arguments.backtest:
-        backtest()
-    else:
-        main(configuration, arguments)
+    main(configuration, arguments)
