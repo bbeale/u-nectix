@@ -8,9 +8,6 @@ from pytz import timezone
 import pandas as pd
 import statistics
 
-from util import time_formatter
-import time
-
 
 def run(broker, args):
 
@@ -24,17 +21,25 @@ def run(broker, args):
     else:
         days_to_test = 30
 
+    # if args.max is not None and type(args.max) == int:
+    #     max_stock_price = args.max
+    # else:
+    #     max_stock_price = 50
+
+    # if args.min is not None and type(args.min) == int:
+    #     min_stock_price = args.min
+    # else:
+    #     min_stock_price = 5
+
     # initial trade state
+    # backdate        = time_formatter(time.time() - (604800 * 54))
+    # tickers         = asset_selector.bullish_candlesticks()
     trading_symbol  = None
     trading         = False
     cash            = broker.cash
     portfolio_amount = broker.buying_power
-    max_stock_price = args.max
-    min_stock_price = args.min
     stocks_to_hold  = 150
-    # backdate        = time_formatter(time.time() - (604800 * 54))
     asset_selector  = AssetSelector(broker, args, edgar_token=None)
-    # tickers         = asset_selector.bullish_candlesticks()
     indicators      = Indicators(broker, args, asset_selector).data
 
     """Trying to set up something similar to that in here
@@ -59,14 +64,14 @@ def run(broker, args):
         for calendar in calendars:
             # See how much we got back by holding the last day's picks overnight
             # portfolio_amount += get_value_of_assets(api, shares, calendar.date)
-            print('Portfolio value on {}: ${:0.2f}'.format(calendar.date.strftime('%Y-%m-%d'), portfolio_amount))
+            print('Portfolio value on {}: ${}'.format(calendar.date.strftime('%Y-%m-%d'), portfolio_amount))
 
             if cal_index == len(calendars) - 1:
                 # We've reached the end of the backtesting window.
                 break
             symbols = asset_selector.trading_assets
             # Get the ratings for a particular day
-            ratings = get_ratings(symbols, broker, max_stock_price, min_stock_price, stocks_to_hold, timezone('EST').localize(calendar.date))
+            ratings = get_ratings(symbols, broker, stocks_to_hold, timezone('EST').localize(calendar.date))
             shares = get_shares_to_buy(ratings, portfolio_amount)
             for _, row in ratings.iterrows():
                 # "Buy" our shares on that day and subtract the cost.
@@ -78,7 +83,7 @@ def run(broker, args):
         # do stuff from the run live function
         pass
 
-def get_ratings(symbols, broker, max_price, min_price, shares_to_hold, algo_time):
+def get_ratings(symbols, broker, shares_to_hold, algo_time):
     # assets = api.list_assets()
     # assets = [asset for asset in assets if asset.tradable ]
     ratings = pd.DataFrame(columns=['symbol', 'rating', 'price'])
@@ -111,25 +116,25 @@ def get_ratings(symbols, broker, max_price, min_price, shares_to_hold, algo_time
 
                 # Now, if the stock is within our target range, rate it.
                 price = bars[-1].c
-                if price <= max_price and price >= min_price:
-                    price_change = price - bars[0].c
-                    # Calculate standard deviation of previous volumes
-                    past_volumes = [bar.v for bar in bars[:-1]]
-                    volume_stdev = statistics.stdev(past_volumes)
-                    if volume_stdev == 0:
-                        # The data for the stock might be low quality.
-                        continue
-                    # Then, compare it to the change in volume since yesterday.
-                    volume_change = bars[-1].v - bars[-2].v
-                    volume_factor = volume_change / volume_stdev
-                    # Rating = Number of volume standard deviations * momentum.
-                    rating = price_change/bars[0].c * volume_factor
-                    if rating > 0:
-                        ratings = ratings.append({
-                            'symbol': symbol,
-                            'rating': price_change/bars[0].c * volume_factor,
-                            'price': price
-                        }, ignore_index=True)
+                # min max price check used to be here -- make sure it still works
+                price_change = price - bars[0].c
+                # Calculate standard deviation of previous volumes
+                past_volumes = [bar.v for bar in bars[:-1]]
+                volume_stdev = statistics.stdev(past_volumes)
+                if volume_stdev == 0:
+                    # The data for the stock might be low quality.
+                    continue
+                # Then, compare it to the change in volume since yesterday.
+                volume_change = bars[-1].v - bars[-2].v
+                volume_factor = volume_change / volume_stdev
+                # Rating = Number of volume standard deviations * momentum.
+                rating = price_change/bars[0].c * volume_factor
+                if rating > 0:
+                    ratings = ratings.append({
+                        'symbol': symbol,
+                        'rating': price_change/bars[0].c * volume_factor,
+                        'price': price
+                    }, ignore_index=True)
         index += 200
     ratings = ratings.sort_values('rating', ascending=False)
     ratings = ratings.reset_index(drop=True)
