@@ -24,6 +24,16 @@ class AssetSelector:
         else:
             self.period = "1D"
 
+        if cli_args.max is not None and type(cli_args.max) == int:
+            self.max_stock_price = cli_args.max
+        else:
+            self.max_stock_price = 50
+
+        if cli_args.min is not None and type(cli_args.min) == int:
+            self.min_stock_price = cli_args.min
+        else:
+            self.min_stock_price = 5
+
         if "short" in cli_args.mode or "long" in cli_args.mode:
             self.shorts_wanted = True
 
@@ -72,9 +82,9 @@ class AssetSelector:
         """
         Populate tradeable assets based on CLI arg. This will not scale as I add more selection (sentiment, SEC) methods.
         """
-        if not self.selection_method or self.selection_method is None or self.selection_method == "bullish_candlesticks":
+        if not self.selection_method or self.selection_method is None or self.selection_method == "bullish_candlestick":
             self.bullish_candlesticks()
-        elif self.selection_method == "bearish_candlesticks":
+        elif self.selection_method == "bearish_candlestick":
             self.bearish_candlesticks()
         elif self.selection_method == "top_gainers":
             self.top_gainers()
@@ -153,7 +163,14 @@ class AssetSelector:
             """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
             limit = 1000
             df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+
+            # guard clauses to make sure we have enough data to work with
             if df is None or len(df) != limit:
+                continue
+
+            # throw it away if the price is out of our min-max range
+            close = df["close"].iloc[-1]
+            if close > self.max_stock_price or close < self.min_stock_price:
                 continue
 
             pattern = self.candle_pattern_direction(df)
