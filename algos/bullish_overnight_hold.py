@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from util import calculate_tolerable_risk, calculate_position_size
 from src.indicator_collection import Indicators as Indicators
 from src.asset_selector import AssetSelector
 from src.broker import BrokerException
@@ -21,24 +22,12 @@ def run(broker, args):
     else:
         days_to_test = 30
 
-    # if args.max is not None and type(args.max) == int:
-    #     max_stock_price = args.max
-    # else:
-    #     max_stock_price = 50
-
-    # if args.min is not None and type(args.min) == int:
-    #     min_stock_price = args.min
-    # else:
-    #     min_stock_price = 5
-
     # initial trade state
-    # backdate        = time_formatter(time.time() - (604800 * 54))
-    # tickers         = asset_selector.bullish_candlesticks()
+    cash            = float(broker.cash)
+    risk_amount     = calculate_tolerable_risk(cash, .10)
+    stocks_to_hold  = None
     trading_symbol  = None
     trading         = False
-    cash            = broker.cash
-    portfolio_amount = broker.buying_power
-    stocks_to_hold  = 150
     asset_selector  = AssetSelector(broker, args, edgar_token=None)
     indicators      = Indicators(broker, args, asset_selector).data
 
@@ -64,7 +53,7 @@ def run(broker, args):
         for calendar in calendars:
             # See how much we got back by holding the last day's picks overnight
             # portfolio_amount += get_value_of_assets(api, shares, calendar.date)
-            print('Portfolio value on {}: ${}'.format(calendar.date.strftime('%Y-%m-%d'), portfolio_amount))
+            print('Cash account value on {}: ${}'.format(calendar.date.strftime('%Y-%m-%d'), cash))
 
             if cal_index == len(calendars) - 1:
                 # We've reached the end of the backtesting window.
@@ -72,12 +61,16 @@ def run(broker, args):
             symbols = asset_selector.trading_assets
             # Get the ratings for a particular day
             ratings = get_ratings(symbols, broker, stocks_to_hold, timezone('EST').localize(calendar.date))
-            shares = get_shares_to_buy(ratings, portfolio_amount)
+            shares = get_shares_to_buy(ratings, cash)
             for _, row in ratings.iterrows():
                 # "Buy" our shares on that day and subtract the cost.
-                shares_to_buy = shares[row['symbol']]
-                cost = row['price'] * shares_to_buy
-                portfolio_amount -= cost
+
+                # TODO populate shares_to_by with my util function
+
+                shares_to_buy = round(shares[row['symbol']], 2)
+                cost = round(round(row['price'], 2) * shares_to_buy, 2)
+                cash -= cost
+                cash = round(cash, 2)
             cal_index += 1
     else:
         # do stuff from the run live function
@@ -145,7 +138,6 @@ def get_shares_to_buy(ratings_df, portfolio):
     total_rating = ratings_df['rating'].sum()
     shares = {}
     for _, row in ratings_df.iterrows():
-        shares[row['symbol']] = int(
-            row['rating'] / total_rating * portfolio / row['price']
-        )
+        asdf = float(row['rating']) / float(total_rating) * float(portfolio) / float(row['price'])
+        shares[row['symbol']] = asdf
     return shares

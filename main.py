@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from src.broker import Broker, BrokerException, BrokerValidationException
 from alpaca_trade_api.rest import REST, APIError
-from algos import sample_algo
+from algos import bullish_overnight_hold
 import configparser
 import argparse
 import sys
@@ -92,7 +92,7 @@ def main(config, args):
     if args.min is None:
         args.min = 6
 
-    sample_algo.run(broker, args)
+    bullish_overnight_hold.run(broker, args)
 
 
 if __name__ == "__main__":
