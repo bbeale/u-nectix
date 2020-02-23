@@ -76,7 +76,7 @@ def main(config, args):
             raise BrokerException("[!] Account is currently restricted from trading.")
 
     # how much money can we use to open new positions?
-    print("[?] ${} is available as buying power.".format(broker.buying_power))
+    print("[?] ${} is available in cash.".format(broker.cash))
 
     """Run the algorithm."""
     if args.mode is None:

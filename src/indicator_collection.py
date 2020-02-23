@@ -49,7 +49,6 @@ class Indicators:
 
     def _populate_indicators(self):
         """ Second method of two stage init process. """
-        # self.indicator_list = ["close", "macd", "signal", "mfi", "vzo"]
         self.indicator_list = []
         self._asset_indicators()
 
