@@ -1,29 +1,39 @@
-# u-nectix
-
-A WIP algorithmic trading bot written in Python that leverages traditional technical indicators, Twitter data, the EDGAR database of SEC filings, along with various machine learning models.
-
-The name comes from a combination of the word "equity" and the animal genus [eunectes](https://en.wikipedia.org/wiki/Eunectes), because naming Python applications after snakes is fun. Given that this trading bot runs on the [Alpaca](https://alpaca.markets/) exchange, a South American snake populating roughly the same geograhical vicinity as the alpaca made sense.
-
 # Instructions
 
-Clone repository
+1. Clone repository
 
-`mkdir u-nectix && cd u-nectix`
+    `git clone https://github.com/mufniarz/alpaca-ai-traders.git`
 
-`git clone https://github.com/bbeale/u-nectix`
+    `cd alpaca-ai-traders`
 
-Install dependencies
+2. Install Anaconda Python 3.7 version
+    - https://www.anaconda.com/distribution/#windows
+    - REQUIRED: Check Add PATHS on install
 
-`pip install -r requirements.txt`
+    `conda env create -f environment.yml -n aitrader`
 
-Add values to `config.ini`
+    `conda activate aitrader`
 
-Run the script
+    Update conda environment (optional if new packages added)
 
-`python u-nectix.py`   
+    `conda env update -f environment.yml -n aitrader`
+
+3. Switch to your environment.
+    
+    `conda activate aitrader`
+
+4. Install dependencies
+
+    `pip install -r requirements.txt`
+
+5. Add values to `config.ini`
+    - Set keys
+
+6. Run in notebook
+
+    `jupyter notebook`
 
 
-# Plans
-- Add bearish / sell signal methods.
-- Implement LSTM in `Predictor`.
-- Implement buy/sell signals using `Predictor` outputs in `algos/` files.
+### Run the script
+
+    `python main.py`   

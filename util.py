@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from datetime import date
 from pandas.io.json import json_normalize
 from pandas.errors import EmptyDataError
-import alpaca_trade_api as tradeapi
+from datetime import date
 import pandas as pd
 import numpy as np
 import time
@@ -116,42 +115,6 @@ def sort_returns(rets, num):
     return np.array(ins), np.array(outs)
 
 
-def submit_order(api_reference, ticker, qty, transaction_side, ttype, time_in_force):
-    """Submit an order using a reference to the Alpaca API.
-
-    :param api_reference: An instance of the Aplaca API
-    :param ticker: Ticker symbol to trade
-    :param qty: Number of shares to trade
-    :param transaction_side: Buy or sell
-    :param ttype: Order type (market, limit, stop, or stop_limit)
-    :param time_in_force: day, gtc, opg, cls, ioc, or fok
-    :return:
-    """
-    if not api_reference or api_reference is None:
-        raise ValueError("Invalid API reference")
-
-    if not ticker or ticker is None:
-        raise ValueError("Invalid ticker")
-
-    if qty is None or len(qty) < 1:
-        raise ValueError("Invalid qty")
-
-    if not transaction_side or transaction_side not in ["buy", "sell"]:
-        raise ValueError("Invalid transaction_side")
-
-    if not ttype or ttype not in ["market", "limit", "stop", "stop_limit"]:
-        raise ValueError("Invalid ttype")
-
-    if not time_in_force or time_in_force not in ["day", "gtc", "opg", "cls", "ioc", "fok"]:
-        raise ValueError("Invalid time_in_force")
-
-    try:
-        result = api_reference.submit_order(ticker, qty, transaction_side, ttype, time_in_force)
-    except tradeapi.rest.APIError:
-        raise tradeapi.rest.APIError("[!] Unable to submit {} order for {}.".format(str(transaction_side), str(ticker)))
-    else:
-        return result
-
 def set_candlestick_df(bars):
     """Given a collection of candlestick bars, return a dataframe.
 
@@ -252,3 +215,35 @@ def df2csv(dataframe, ticker):
             raise FileNotFoundError("[!] Unable to save dataframe to CSV file.")
     finally:
         print("[+] File saved:\t{}".format(datafile))
+
+
+def calculate_tolerable_risk(balance, risk_pct):
+
+    if not balance or balance is None or balance == 0:
+        raise ValueError("[!] valid balance is required.")
+
+    if not risk_pct or risk_pct is None or risk_pct == 0:
+        raise ValueError("[!] risk_pct cannot be zero.")
+
+    return float(balance * risk_pct)
+
+
+def calculate_position_size(price, trading_balance, risk_pct=.10):
+    """Given a stock price, available trading balance, and a risk percentage, calculate a position size for a trade.
+
+    :param price:
+    :param trading_balance:
+    :param risk_pct:
+    :return:
+    """
+
+    if not price or price is None:
+        raise ValueError("[!] A price is required for this calculation.")
+
+    if not trading_balance or trading_balance is None:
+        raise ValueError("[!] A trading_balance is required for this calculation.")
+
+    if risk_pct == 0:
+        raise ValueError("[!] risk_pct cannot be zero.")
+
+    return int(trading_balance * risk_pct / price)
