@@ -51,38 +51,42 @@ def run(broker, args):
         shares = {}
         cal_index = 0
         for calendar in calendars:
+
+            # THE PIECE I HAVE BEEN MISSING
             # See how much we got back by holding the last day's picks overnight
-            # portfolio_amount += get_value_of_assets(api, shares, calendar.date)
-            print('Cash account value on {}: ${}'.format(calendar.date.strftime('%Y-%m-%d'), cash))
+            cash += get_value_of_assets(broker.api, shares, calendar.date)
+
+            print('Cash account value on {}: ${}'.format(calendar.date.strftime('%Y-%m-%d'), cash),
+                'Risk amount: ${}'.format(risk_amount))
 
             if cal_index == len(calendars) - 1:
                 # We've reached the end of the backtesting window.
                 break
             symbols = asset_selector.trading_assets
             # Get the ratings for a particular day
-            ratings = get_ratings(symbols, broker, stocks_to_hold, timezone('EST').localize(calendar.date))
-            shares = get_shares_to_buy(ratings, cash)
+            ratings = get_ratings(symbols, broker, stocks_to_hold, timezone('EST').localize(calendar.date), window_size=10)
+            shares = get_shares_to_buy(ratings, risk_amount)
             for _, row in ratings.iterrows():
                 # "Buy" our shares on that day and subtract the cost.
-
-                # TODO populate shares_to_by with my util function
-
-                shares_to_buy = round(shares[row['symbol']], 2)
+                shares_to_buy = int(shares[row['symbol']])
                 cost = round(round(row['price'], 2) * shares_to_buy, 2)
                 cash -= cost
                 cash = round(cash, 2)
+
+                # calculate the amount we want to risk on the next trade
+                risk_amount = calculate_tolerable_risk(cash, .10)
             cal_index += 1
     else:
         # do stuff from the run live function
         pass
 
-def get_ratings(symbols, broker, shares_to_hold, algo_time):
+def get_ratings(symbols, broker, shares_to_hold, algo_time, window_size=5):
     # assets = api.list_assets()
     # assets = [asset for asset in assets if asset.tradable ]
     ratings = pd.DataFrame(columns=['symbol', 'rating', 'price'])
     index = 0
-    batch_size = 200 # The maximum number of stocks to request data for
-    window_size = 5 # The number of days of data to consider
+    batch_size = 200  # The maximum number of stocks to request data for
+    window_size = window_size  # The number of days of data to consider
     formatted_time = None
     if algo_time is not None:
         # Convert the time to something compatable with the Alpaca API.
@@ -134,10 +138,29 @@ def get_ratings(symbols, broker, shares_to_hold, algo_time):
     return ratings[:shares_to_hold]
 
 
-def get_shares_to_buy(ratings_df, portfolio):
-    total_rating = ratings_df['rating'].sum()
+def get_shares_to_buy(data, cash):
+    total_rating = data['rating'].sum()
     shares = {}
-    for _, row in ratings_df.iterrows():
-        asdf = float(row['rating']) / float(total_rating) * float(portfolio) / float(row['price'])
-        shares[row['symbol']] = asdf
+    for _, row in data.iterrows():
+        shares[row['symbol']] = float(row['rating']) / float(total_rating) * float(cash) / float(row['price'])
     return shares
+
+def get_value_of_assets(api, shares_bought, on_date):
+    if len(shares_bought.keys()) == 0:
+        return 0
+
+    total_value = 0
+    formatted_date = api_format(on_date)
+    barset = api.get_barset(
+        symbols=shares_bought.keys(),
+        timeframe='day',
+        limit=1,
+        end=formatted_date
+    )
+    for symbol in shares_bought:
+        total_value += shares_bought[symbol] * barset[symbol][0].o
+    return total_value
+
+# Returns a string version of a timestamp compatible with the Alpaca API.
+def api_format(dt):
+    return dt.strftime('%Y-%m-%dT%H:%M:%S.%f-04:00')
