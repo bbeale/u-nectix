@@ -225,7 +225,7 @@ def calculate_tolerable_risk(balance, risk_pct):
     if not risk_pct or risk_pct is None or risk_pct == 0:
         raise ValueError("[!] risk_pct cannot be zero.")
 
-    return float(balance * risk_pct)
+    return round(float(balance * risk_pct), 2)
 
 
 def calculate_position_size(price, trading_balance, risk_pct=.10):
