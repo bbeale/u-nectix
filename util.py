@@ -262,6 +262,10 @@ def parse_configs():
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-a", "--algorithm",
+        type=str,
+        required=False,
+        help="the algorithm we want to trade with -- must be a valid file in the algos directory")
     parser.add_argument("-b", "--backtest",
         required=False,
         action="store_true",
@@ -298,8 +302,4 @@ def parse_args():
         type=int,
         required=False,
         help="number of records")
-    parser.add_argument("-sm", "--selection_method",
-        type=str,
-        required=False,
-        help="asset selection method - currently supports 'bullish_candlesticks', 'bearish_candlesticks', 'top_gainers', 'top_losers'")
     return parser.parse_args()
