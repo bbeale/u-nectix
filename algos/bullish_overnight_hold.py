@@ -17,8 +17,8 @@ def run(broker, args):
     else:
         broker = broker
 
-    if args.days is not None and type(args.days) == int:
-        days_to_test = args.days
+    if args.testperiods is not None and type(args.testperiods) == int:
+        days_to_test = args.testperiods
     else:
         days_to_test = 30
 

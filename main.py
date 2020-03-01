@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# from algos import bullish_overnight_hold, bullish_overnight_crypto_hold, bullish_overnight_forex_hold
 from src.broker import Broker, BrokerException, BrokerValidationException
 from src.krak_dealer import KrakDealer
 from src.forex_broker import ForexBroker
@@ -8,10 +7,8 @@ from util import parse_configs, parse_args
 from pykrakenapi.pykrakenapi import KrakenAPI, KrakenAPIError
 from alpaca_trade_api.rest import REST, APIError
 from oandapy import API, OandaError
-import krakenex
-import os
-
 from importlib import import_module
+import krakenex
 
 
 def main(config, args):
@@ -32,10 +29,14 @@ def main(config, args):
         # print("[?] ${} is available in cash.".format(broker.trade_balance["tb"]))
 
         """Run the algorithm."""
+        if args.pair is None:
+            args.pair = "USDEUR"
         if args.mode is None:
             args.mode = 'long'
         if args.period is None:
             args.period = "1D"
+        if args.algorithm is None:
+            args.algorithm = "bullish_overnight_forex_hold"
         if args.testperiods is None:
             args.testperiods = 30
 
@@ -110,31 +111,12 @@ def main(config, args):
         if args.min is None:
             args.min = 6
 
-        # algo_name = args.selection_method
-        # algo_file = os.path.join("algos", f"{args.algorithm}.py")
-        # if not os.path.exists(algo_file):
-        #     raise FileExistsError
-        # if not os.path.isfile(algo_file):
-        #     raise FileNotFoundError
-        #
-        # bullish_overnight_hold.run(broker, args)
-
-    trade(broker, args)
-
-
-def trade(broker, args):
+    # try and import the corresponding Python file from algos
     try:
-        algorithm = import_module("algos", package=args.algorithm)
+        algorithm = import_module(f"algos.{args.algorithm}")
     except ImportError as error:
         raise error
     else:
-
-        # algo_file = os.path.join("algos", f"{args.algorithm}.py")
-        # if not os.path.exists(algo_file):
-        #     raise FileExistsError
-        # if not os.path.isfile(algo_file):
-        #     raise FileNotFoundError
-
         algorithm.run(broker, args)
 
 
