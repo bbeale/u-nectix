@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from util import time_formatter, num_bars
 from src.edgar_interface import EdgarInterface
+from util import time_formatter, num_bars
 import json
 import time
 
@@ -12,6 +12,10 @@ class AssetSelector:
         """Initialize the asset selector with an optional edgar token
 
         TODO: Incorporate Twitter api and trade signals
+
+        TODO:
+        https://www.investopedia.com/articles/active-trading/092315/5-most-powerful-candlestick-patterns.asp
+        https://www.daytrading.com/patterns
 
         :param broker:
         :param edgar_token:
@@ -78,26 +82,28 @@ class AssetSelector:
         self._tradeable_assets(self.raw_assets)
         self._assets_to_trade()
 
-    def _assets_to_trade(self):
-        """
-        Populate tradeable assets based on CLI arg. This will not scale as I add more selection (sentiment, SEC) methods.
-        """
-        if not self.selection_method or self.selection_method is None or self.selection_method == "bullish_candlestick":
-            self.bullish_candlesticks()
-        elif self.selection_method == "bearish_candlestick":
-            self.bearish_candlesticks()
-        elif self.selection_method == "top_gainers":
-            self.top_gainers()
-        elif self.selection_method == "top_losers":
-            self.top_losers()
 
-        # todo - set trading_algorithm based on new cli arg for selection method. Default to bullish_candlesticks if None
 
-        elif self.shorts_wanted:
-            self.bearish_candlesticks()
-        # todo - implement more of these and provide a more dynamic way to choose
-        else:
-            raise AssetException("[!] Unable to get assets by trading algorithm/strategy.")
+    # def _assets_to_trade(self):
+    #     """
+    #     Populate tradeable assets based on CLI arg. This will not scale as I add more selection (sentiment, SEC) methods.
+    #     """
+    #     if not self.selection_method or self.selection_method is None or self.selection_method == "bullish_candlestick":
+    #         self.bullish_candlesticks()
+    #     elif self.selection_method == "bearish_candlestick":
+    #         self.bearish_candlesticks()
+    #     elif self.selection_method == "top_gainers":
+    #         self.top_gainers()
+    #     elif self.selection_method == "top_losers":
+    #         self.top_losers()
+    #
+    #     # todo - set trading_algorithm based on new cli arg for selection method. Default to bullish_candlesticks if None
+    #
+    #     elif self.shorts_wanted:
+    #         self.bearish_candlesticks()
+    #     # todo - implement more of these and provide a more dynamic way to choose
+    #     else:
+    #         raise AssetException("[!] Unable to get assets by trading algorithm/strategy.")
 
     @staticmethod
     def _candlestick_patterns(c1, c2, c3):
