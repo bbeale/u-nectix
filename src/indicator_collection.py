@@ -377,6 +377,9 @@ class Indicators:
 
             except IndicatorException:
                 print("[?] Failed to grab one or more indicator for {}".format(ticker))
+
+        data = data.dropna(axis="columns", thresh=20)
+        data = data.dropna(axis=0, how="any")
         return data
 
 

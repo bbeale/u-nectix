@@ -11,6 +11,10 @@ https://towardsdatascience.com/building-an-automated-trading-system-from-the-com
 https://pyportfolioopt.readthedocs.io/en/latest/
 """
 
+"""
+https://towardsdatascience.com/building-an-automated-trading-system-from-the-comfort-of-your-own-home-c9a2fb7405a3#Risk%20Management
+"""
+
 class RiskManagement:
 
     def __init__(self, dataframe):

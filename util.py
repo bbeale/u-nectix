@@ -5,6 +5,8 @@ from pandas.errors import EmptyDataError
 from datetime import date
 import pandas as pd
 import numpy as np
+import configparser
+import argparse
 import time
 import json
 import os
@@ -225,7 +227,7 @@ def calculate_tolerable_risk(balance, risk_pct):
     if not risk_pct or risk_pct is None or risk_pct == 0:
         raise ValueError("[!] risk_pct cannot be zero.")
 
-    return float(balance * risk_pct)
+    return round(float(balance * risk_pct), 2)
 
 
 def calculate_position_size(price, trading_balance, risk_pct=.10):
@@ -247,3 +249,57 @@ def calculate_position_size(price, trading_balance, risk_pct=.10):
         raise ValueError("[!] risk_pct cannot be zero.")
 
     return int(trading_balance * risk_pct / price)
+
+def parse_configs():
+    parser = configparser.ConfigParser()
+    try:
+        parser.read(os.path.relpath("config.ini"))
+    except FileExistsError as error:
+        raise error
+    else:
+        return parser
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-a", "--algorithm",
+        type=str,
+        required=False,
+        help="the algorithm we want to trade with -- must be a valid file in the algos directory")
+    parser.add_argument("-b", "--backtest",
+        required=False,
+        action="store_true",
+        help="run in backtest mode if true, otherwise run in live mode")
+    parser.add_argument("-c", "--crypto",
+        required=False,
+        action="store_true",
+        help="if true, trade cryptocurrency instead of stocks using the Kraken exchange.")
+    parser.add_argument("-f", "--forex",
+        required=False,
+        action="store_true",
+        help="if true, trade forex instead of stocks using the Kraken exchange.")
+    parser.add_argument("-tp", "--testperiods",
+        type=int,
+        required=False,
+        help="number of periods to backtest")
+    parser.add_argument("-mx", "--max",
+        type=float,
+        required=False,
+        help="max price per share we are willing to accept")
+    parser.add_argument("-mn", "--min",
+        type=float,
+        required=False,
+        help="min price per share we are willing to accept")
+    parser.add_argument("-m", "--mode",
+        type=str,
+        required=False,
+        help="long or short")
+    parser.add_argument("-p", "--period",
+        type=str,
+        required=False,
+        help="a period of time between candlestick bars, choices supported by Alpaca API are:  ")
+    parser.add_argument("-r", "--records",
+        type=int,
+        required=False,
+        help="number of records")
+    return parser.parse_args()
