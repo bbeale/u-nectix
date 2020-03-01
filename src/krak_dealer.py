@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from pykrakenapi.pykrakenapi import KrakenAPIError
-from marshmallow import Schema, fields, ValidationError
+from src.broker import BrokerValidationException
 import pandas as pd
 import time
 
@@ -19,10 +19,3 @@ class KrakDealer:
 
     def get_trade_balance(self, asset="XBT"):
         return self.api.get_trade_balance(asset=asset)
-
-class KrakDealerException(Exception):
-    pass
-
-
-class KrakDealerSchema(Schema):
-    pass
