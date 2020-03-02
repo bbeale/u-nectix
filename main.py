@@ -46,7 +46,7 @@ def main(config, args):
     if args.crypto:
         print("[-] do stuff with Kraken.")
         try:
-            api = krakenex.API()
+            api = krakenex.API(key=config["kraken"]["api_key"], secret=config["kraken"]["private_key"])
             kraken = KrakenAPI(api)
         except KrakenAPIError as error:
             raise error
