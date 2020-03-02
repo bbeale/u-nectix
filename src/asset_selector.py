@@ -48,7 +48,7 @@ class AssetSelector:
             self.ei = EdgarInterface(self.edgar_token)
 
         self.poolsize = poolsize
-        self.selection_method = cli_args.selection_method
+        self.algorithm = cli_args.algorithm
         self.raw_assets = None
         self.tradeable_assets = None
         self.recent_filings = None
@@ -82,28 +82,15 @@ class AssetSelector:
         self._tradeable_assets(self.raw_assets)
         self._assets_to_trade()
 
+    def _assets_to_trade(self):
+        """
+        Populate tradeable assets based on CLI arg. This will not scale as I add more selection (sentiment, SEC) methods.
+        """
+        if self.algorithm not in [item for item in dir(self) if "__" not in item]:
+            raise AssetValidationException("[!] Unable to determine asset selector method in the context of AssetSelector")
 
-
-    # def _assets_to_trade(self):
-    #     """
-    #     Populate tradeable assets based on CLI arg. This will not scale as I add more selection (sentiment, SEC) methods.
-    #     """
-    #     if not self.selection_method or self.selection_method is None or self.selection_method == "bullish_candlestick":
-    #         self.bullish_candlesticks()
-    #     elif self.selection_method == "bearish_candlestick":
-    #         self.bearish_candlesticks()
-    #     elif self.selection_method == "top_gainers":
-    #         self.top_gainers()
-    #     elif self.selection_method == "top_losers":
-    #         self.top_losers()
-    #
-    #     # todo - set trading_algorithm based on new cli arg for selection method. Default to bullish_candlesticks if None
-    #
-    #     elif self.shorts_wanted:
-    #         self.bearish_candlesticks()
-    #     # todo - implement more of these and provide a more dynamic way to choose
-    #     else:
-    #         raise AssetException("[!] Unable to get assets by trading algorithm/strategy.")
+        selection_method = getattr(self, self.algorithm)
+        selection_method()
 
     @staticmethod
     def _candlestick_patterns(c1, c2, c3):
@@ -156,9 +143,11 @@ class AssetSelector:
 
         return direction
 
-    def bullish_candlesticks(self):
+    def bullish_overnight_hold(self):
         """
         Given a list of assets, evaluate which ones are bullish and return a sample of each.
+
+        These method names should correspond with files in the algos/ directory.
         """
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
             raise AssetValidationException("[!] Invalid pool size.")
