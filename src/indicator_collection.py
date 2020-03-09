@@ -3,7 +3,7 @@
 from src.finta_interface import Indicator, IndicatorException
 from src.broker import BrokerException
 from pandas.errors import EmptyDataError
-from util import time_formatter
+from util import time_from_timestamp
 import pandas as pd
 import inspect
 import time
@@ -27,7 +27,7 @@ class Indicators:
             raise IndicatorValidationException("[!] No ticker symbols found to trade.")
 
         if not backdate or backdate is None:
-            backdate = time_formatter(time.time() - (604800 * 54))
+            backdate = time_from_timestamp(time.time() - (604800 * 54))
 
         if cli_args.period is not None:
             self.period = cli_args.period
@@ -59,7 +59,7 @@ class Indicators:
         """
         if not backdate or backdate is None:
             print("[Debug] Backdate debug", inspect.stack()[0][3])
-            backdate = time_formatter(time.time() - (604800 * 13))
+            backdate = time_from_timestamp(time.time() - (604800 * 13))
 
         for ticker in self.portfolio:
             try:

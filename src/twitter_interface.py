@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from util import time_formatter
+from util import time_from_timestamp
 import src.sentiment_analysis as sa
 import configparser
 import nltk
@@ -56,7 +56,7 @@ class TwitterInterface:
             raise ValueError("Invalid ticker symbol")
 
         if not since or since is None:
-            since = time_formatter(time.time() - (604800 * 13), time_format="%Y-%m-%d")
+            since = time_from_timestamp(time.time() - (604800 * 13), time_format="%Y-%m-%d")
 
         if not search_terms or search_terms is None:
             query = "{} stock".format(ticker)
@@ -70,7 +70,7 @@ class TwitterInterface:
         else:
 
             result_dicts    = [dict(
-                created_at  = time_formatter(float(result.created_at_in_seconds)),
+                created_at  = time_from_timestamp(float(result.created_at_in_seconds)),
                 user        = result.user.name,
                 text        = result.text
             ) for result in results if "RT" not in result.text]

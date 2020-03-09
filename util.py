@@ -12,7 +12,7 @@ import json
 import os
 
 
-def time_formatter(time_stamp, time_format=None):
+def time_from_timestamp(time_stamp, time_format=None):
     """Return a formatted date in open market hours given a timestamp.
 
     :param time_stamp:
@@ -249,6 +249,7 @@ def calculate_position_size(price, trading_balance, risk_pct=.10):
         raise ValueError("[!] risk_pct cannot be zero.")
 
     return int(trading_balance * risk_pct / price)
+
 
 def parse_configs():
     parser = configparser.ConfigParser()
