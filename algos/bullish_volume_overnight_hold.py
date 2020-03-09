@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from util import calculate_tolerable_risk, calculate_position_size
-from src.indicator_collection import Indicators as Indicators
 from src.asset_selector import AssetSelector
 from src.broker import BrokerException
 from datetime import datetime, timedelta
 from pytz import timezone
 import pandas as pd
 import statistics
+import time
 
 
 def run(broker, args):
@@ -26,10 +26,7 @@ def run(broker, args):
     cash            = float(broker.cash)
     risk_amount     = calculate_tolerable_risk(cash, .10)
     stocks_to_hold  = None
-    trading_symbol  = None
-    trading         = False
     asset_selector  = AssetSelector(broker, args, edgar_token=None)
-    indicators      = Indicators(broker, args, asset_selector).data
 
     """Trying to set up something similar to that in here
     https://medium.com/automation-generation/building-and-backtesting-a-stock-trading-script-in-python-for-beginners-105f8976b473
@@ -39,7 +36,7 @@ def run(broker, args):
     Calling the contents of the algos folder by their selection method (bullish_candlestick) doesn't make sense in that regard since its not an actual algo
     
     """
-
+    symbols = asset_selector.portfolio
     if args.backtest:
         # do stuff from the backtest function
         now = datetime.now(timezone('EST'))
@@ -62,7 +59,7 @@ def run(broker, args):
             if cal_index == len(calendars) - 1:
                 # We've reached the end of the backtesting window.
                 break
-            symbols = asset_selector.trading_assets
+            # symbols = asset_selector.portfolio
             # Get the ratings for a particular day
             ratings = get_ratings(symbols, broker, stocks_to_hold, timezone('EST').localize(calendar.date), window_size=10)
             shares = get_shares_to_buy(ratings, risk_amount)
@@ -77,16 +74,79 @@ def run(broker, args):
                 risk_amount = calculate_tolerable_risk(cash, .10)
             cal_index += 1
     else:
-        # do stuff from the run live function
-        pass
+        cycle = 0
 
-def get_ratings(symbols, broker, shares_to_hold, algo_time, window_size=5):
-    # assets = api.list_assets()
-    # assets = [asset for asset in assets if asset.tradable ]
+        # See if we've already bought or sold positions today. If so, we don't want to do it again.
+        # Useful in case the script is restarted during market hours.
+        bought_today = False
+        sold_today = False
+        try:
+            orders = broker.api.list_orders(after=api_format(datetime.today() - timedelta(days=1)), limit=400, status='all')
+        except BrokerException:
+            # We don't have any orders, so we've obviously not done anything today.
+            pass
+        else:
+            for order in orders:
+                if order.side == 'buy':
+                    bought_today = True
+                    # This handles an edge case where the script is restarted
+                    # right before the market closes.
+                    sold_today = True
+                    break
+                else:
+                    sold_today = True
+
+        while True:
+            # wait until the market's open to do anything.
+            clock = broker.api.get_clock()
+            if clock.is_open and not bought_today:
+                if sold_today:
+                    # Wait to buy
+                    time_until_close = clock.next_close - clock.timestamp
+                    # We'll buy our shares a couple minutes before market close.
+                    if time_until_close.seconds <= 120:
+                        print('Buying positions...')
+                        portfolio_cash = float(broker.api.get_account().cash)
+                        # ratings = get_ratings(api, None)
+                        ratings = get_ratings(symbols, broker, stocks_to_hold, window_size=10)
+                        shares_to_buy = get_shares_to_buy(ratings, portfolio_cash)
+                        for symbol in shares_to_buy:
+                            broker.api.submit_order(symbol=symbol, qty=shares_to_buy[symbol], side='buy', type='market',
+                                time_in_force='day')
+                        print('Positions bought.')
+                        bought_today = True
+                else:
+                    # We need to sell our old positions before buying new ones.
+                    time_after_open = clock.next_open - clock.timestamp
+                    # We'll sell our shares just a minute after the market opens.
+                    if time_after_open.seconds >= 60:
+                        print('Liquidating positions.')
+                        broker.api.close_all_positions()
+                    sold_today = True
+            else:
+                bought_today = False
+                sold_today = False
+                if cycle % 10 == 0:
+                    print("Waiting for next market day...")
+            time.sleep(30)
+            cycle += 1
+
+
+def get_ratings(symbols, broker, shares_to_hold, algo_time=None, window_size=5):
+    """
+    TODO: validate these args
+
+    :param symbols:
+    :param broker:
+    :param shares_to_hold:
+    :param algo_time:
+    :param window_size:
+    :return:
+    """
     ratings = pd.DataFrame(columns=['symbol', 'rating', 'price'])
     index = 0
-    batch_size = 200  # The maximum number of stocks to request data for
-    window_size = window_size  # The number of days of data to consider
+    # The number of days of data to consider
+    window_size = window_size
     formatted_time = None
     if algo_time is not None:
         # Convert the time to something compatable with the Alpaca API.

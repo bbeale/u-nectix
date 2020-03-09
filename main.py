@@ -46,13 +46,15 @@ def main(config, args):
     if args.crypto:
         print("[-] do stuff with Kraken.")
         try:
-            api = krakenex.API()
-            kraken = KrakenAPI(api)
+            api = krakenex.API(key=config["kraken"]["api_key"], secret=config["kraken"]["private_key"])
+            kraken = KrakenAPI(api, tier="Starter")
         except KrakenAPIError as error:
             raise error
 
+        pair = "BATUSD"
+
         try:
-            broker = KrakDealer(kraken)
+            broker = KrakDealer(kraken, pair=pair)
         except BrokerException as error:
             raise error
         else:
@@ -103,7 +105,7 @@ def main(config, args):
         if args.period is None:
             args.period = "1D"
         if args.algorithm is None:
-            args.algorithm = "bullish_overnight_hold"
+            args.algorithm = "bullish_volume_overnight_hold"
         if args.testperiods is None:
             args.testperiods = 30
         if args.max is None:

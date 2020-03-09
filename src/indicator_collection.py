@@ -22,7 +22,7 @@ class Indicators:
             raise IndicatorValidationException("[!] Broker instance required.")
 
         if asset_selector is not None:
-            self.ticker_list = asset_selector.trading_assets
+            self.portfolio = asset_selector.portfolio
         else:
             raise IndicatorValidationException("[!] No ticker symbols found to trade.")
 
@@ -61,7 +61,7 @@ class Indicators:
             print("[Debug] Backdate debug", inspect.stack()[0][3])
             backdate = time_formatter(time.time() - (604800 * 13))
 
-        for ticker in self.ticker_list:
+        for ticker in self.portfolio:
             try:
                 self.data[ticker] = self.get_ticker_indicators(ticker, self.period)
             except EmptyDataError:

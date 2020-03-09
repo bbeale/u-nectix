@@ -6,16 +6,22 @@ import pandas as pd
 import time
 
 
+"""
+    https://coinmarketcal.com/en/api#pricing
+"""
+
+
 class KrakDealer:
 
-    def __init__(self, api):
+    def __init__(self, api, pair):
         self.api = api
-        self.trading_account = self.get_account()
+        self.pair = pair
         self.trade_balance = self.get_trade_balance()
+        self.trading_account = self.get_account()
         self.trading_blocked = True if self.trade_balance["tb"] == float(0) else False
 
     def get_account(self):
-        return self.api.get_account_balance()
+        return self.api.get_account_balance()[self.pair]
 
     def get_trade_balance(self, asset="XBT"):
         return self.api.get_trade_balance(asset=asset)
