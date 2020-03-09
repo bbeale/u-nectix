@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from src.finta_interface import Indicator as I, IndicatorException
+from py_trade_signal.exception import TradeSignalException
+from py_trade_signal import TradeSignal
 from src.edgar_interface import EdgarInterface
 from util import time_formatter, num_bars
 import json
@@ -17,11 +20,22 @@ class AssetSelector:
         https://www.investopedia.com/articles/active-trading/092315/5-most-powerful-candlestick-patterns.asp
         https://www.daytrading.com/patterns
 
+        TODO: Stocktwits!
+        https://api.stocktwits.com/developers/docs/api
+
         :param broker:
         :param edgar_token:
         """
         if not broker or broker is None:
             raise AssetValidationException("[!] A Broker instance is required.")
+
+        # JUST FOR NOW -- assume the presence of crypto OR forex arg means something truthy
+        if cli_args.crypto is not None and cli_args.crypto:
+            self.asset_class = "crypto"
+        elif cli_args.forex is not None and cli_args.forex:
+            self.asset_class = "forex"
+        else:
+            self.asset_class = "equity"
 
         if cli_args.period is not None:
             self.period = cli_args.period
@@ -49,20 +63,39 @@ class AssetSelector:
 
         self.poolsize = poolsize
         self.algorithm = cli_args.algorithm
-        self.raw_assets = None
         self.tradeable_assets = None
         self.recent_filings = None
         self.assets_by_filing = None
-        self.trading_assets = None
+        self.portfolio = None
+
+        # initialize trade signal
+        self.signaler = TradeSignal()
 
         # init stage two:
-        self._populate_assets()
+        self.get_assets(self.asset_class, self.algorithm)
 
-    def _raw_assets(self):
+        # get indicators?
+        # self.indicator_data = Indicators(self.broker, cli_args, self).data
+
+    def get_assets(self, asset_class, algorithm):
+        """ Second method of two stage init process. """
+        if asset_class is None:
+            raise AssetValidationException("[!] ")
+
+        if algorithm is None:
+            raise AssetValidationException("[!] ")
+
+        if asset_class == "equity":
+            raw_assets = self._raw_equity_assets()
+            self._tradeable_equity_assets(raw_assets, algorithm)
+        else:
+            raise NotImplementedError("[!] Crypto and forex asset trading is coming soon.")
+
+    def _raw_equity_assets(self):
         """Get assets from Alpaca API and assign them to self.raw_assets."""
-        self.raw_assets = self.broker.get_assets()
+        return self.broker.get_assets()
 
-    def _tradeable_assets(self, asset_list, short=False):
+    def _tradeable_equity_assets(self, asset_list, algorithm, short=False):
         """Scrub the list of assets from the Alpaca API response and get just the ones we can trade.
 
         :param asset_list:
@@ -70,26 +103,18 @@ class AssetSelector:
         """
         if not asset_list or asset_list is None or len(asset_list) is 0:
             raise AssetValidationException("[!] Invalid asset_list.")
+
+        if algorithm not in [item for item in dir(self) if "__" not in item]:
+            raise AssetValidationException("[!] Unable to determine asset selector method in the context of AssetSelector")
+
         if short:
             self.tradeable_assets = [a for a in asset_list if
                                      a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
         else:
             self.tradeable_assets = [a for a in asset_list if a.tradable and a.marginable]
 
-    def _populate_assets(self):
-        """ Second method of two stage init process. """
-        self._raw_assets()
-        self._tradeable_assets(self.raw_assets)
-        self._assets_to_trade()
-
-    def _assets_to_trade(self):
-        """
-        Populate tradeable assets based on CLI arg. This will not scale as I add more selection (sentiment, SEC) methods.
-        """
-        if self.algorithm not in [item for item in dir(self) if "__" not in item]:
-            raise AssetValidationException("[!] Unable to determine asset selector method in the context of AssetSelector")
-
-        selection_method = getattr(self, self.algorithm)
+        # populate our portfolio based on our trading algorithm
+        selection_method = getattr(self, algorithm)
         selection_method()
 
     @staticmethod
@@ -143,7 +168,7 @@ class AssetSelector:
 
         return direction
 
-    def bullish_overnight_hold(self):
+    def bullish_volume_overnight_hold(self):
         """
         Given a list of assets, evaluate which ones are bullish and return a sample of each.
 
@@ -152,7 +177,7 @@ class AssetSelector:
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
             raise AssetValidationException("[!] Invalid pool size.")
 
-        self.trading_assets = []
+        self.portfolio = []
 
         for ass in self.tradeable_assets:
             """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
@@ -173,20 +198,55 @@ class AssetSelector:
                 continue
 
             if pattern is "bull":
-                # add the current symbol the list of symbols
-                self.trading_assets.append(ass.symbol)
-                if len(self.trading_assets) >= self.poolsize:
+                # add the current symbol to the portfolio
+                self.portfolio.append(ass.symbol)
+                if len(self.portfolio) >= self.poolsize:
                     # exit the filter process
                     break
 
-    def bearish_candlesticks(self):
+    def bullish_macd_overnight_hold(self):
+        """
+        Given a list of assets, evaluate which ones are bullish and return a sample of each.
+
+        These method names should correspond with files in the algos/ directory.
+        """
+        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
+            raise AssetValidationException("[!] Invalid pool size.")
+
+        self.portfolio = []
+
+        for ass in self.tradeable_assets:
+            """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
+            limit = 1000
+            df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+
+            # guard clauses to make sure we have enough data to work with
+            if df is None or len(df) != limit:
+                continue
+
+            # throw it away if the price is out of our min-max range
+            close = df["close"].iloc[-1]
+            if close > self.max_stock_price or close < self.min_stock_price:
+                continue
+
+            # Look for buy signals
+            macd_signal = self.signaler.macd_signal.buy(df)
+            mfi_signal = self.signaler.mfi_signal.buy(df)
+            if macd_signal and mfi_signal:
+                # add the current symbol to the portfolio
+                self.portfolio.append(ass.symbol)
+                if len(self.portfolio) >= self.poolsize:
+                    # exit the filter process
+                    break
+
+    def bearish_volume_overnight_hold(self):
         """
         Given a list of assets, evaluate which ones are bearish and return a sample of each.
         """
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
             raise AssetValidationException("[!] Invalid pool size.")
 
-        self.trading_assets = []
+        self.portfolio = []
 
         for ass in self.tradeable_assets:
             limit = 1000
@@ -199,20 +259,20 @@ class AssetSelector:
                 continue
 
             if pattern is "bear":
-                # add the current symbol to the list of symbols
-                self.trading_assets.append(ass.symbol)
-                if len(self.trading_assets) >= self.poolsize:
+                # add the current symbol to the portfolio
+                self.portfolio.append(ass.symbol)
+                if len(self.portfolio) >= self.poolsize:
                     # exit the filter process
                     break
 
-    def top_gainers(self):
+    def top_gainer_overnight_reversal(self):
         """
         Use Polygon endpoint to populate a watchlist of top "gainers".
         """
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
             raise AssetValidationException("[!] Invalid pool size.")
 
-        self.trading_assets = []
+        self.portfolio = []
 
         gainers = self.broker.api.polygon.gainers_losers()
         for symbol in range(len(gainers)):
@@ -220,20 +280,23 @@ class AssetSelector:
             ticker = gainers[symbol].ticker
             ass = self.broker.get_asset(ticker)
             if ass is not None and ass.tradable and ass.easy_to_borrow:
-                # add the current symbol to the list of symbols
-                self.trading_assets.append(ass.symbol)
-                if len(self.trading_assets) >= self.poolsize:
+
+                # TODO: look for reversal here
+
+                # add the current symbol to the portfolio
+                self.portfolio.append(ass.symbol)
+                if len(self.portfolio) >= self.poolsize:
                     # exit the filter process
                     break
 
-    def top_losers(self):
+    def top_loser_overnight_reversal(self):
         """
         Use Polygon endpoint to populate a list of top "losers".
         """
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
             raise AssetValidationException("[!] Invalid pool size.")
 
-        self.trading_assets = []
+        self.portfolio = []
 
         losers = self.broker.api.polygon.gainers_losers("losers")
         for symbol in range(len(losers)):
@@ -241,13 +304,16 @@ class AssetSelector:
             ticker = losers[symbol].ticker
             ass = self.broker.get_asset(ticker)
             if ass is not None and ass.tradable and ass.easy_to_borrow:
-                # add the current symbol to the list of symbols
-                self.trading_assets.append(ass.symbol)
-                if len(self.trading_assets) >= self.poolsize:
+
+                # TODO: look for reversal here
+
+                # add the current symbol to the portfolio
+                self.portfolio.append(ass.symbol)
+                if len(self.portfolio) >= self.poolsize:
                     # exit the filter process
                     break
 
-    def undervalued(self):
+    def undervalued_overnight_hold(self):
         """
             https://medium.com/datadriveninvestor/how-i-use-this-free-api-to-find-undervalued-stocks-6574b9a3f2fe
 
@@ -257,7 +323,7 @@ class AssetSelector:
         """
         raise NotImplementedError
 
-    def overvalued(self):
+    def overvalued_overnight_hold(self):
         raise NotImplementedError
 
     """ Interacting with the EDGAR API. Not sure how I want to approach this yet because I haven't 
