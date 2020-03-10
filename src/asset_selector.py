@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from src.finta_interface import Indicator as I, IndicatorException
-from py_trade_signal.exception import TradeSignalException
-from py_trade_signal import TradeSignal
 from src.edgar_interface import EdgarInterface
 from util import time_from_timestamp, num_bars
+from py_trade_signal import TradeSignal
 import json
 import time
+
+# from src.finta_interface import Indicator as I, IndicatorException
+# from py_trade_signal.exception import TradeSignalException
 
 
 class AssetSelector:
@@ -73,9 +74,6 @@ class AssetSelector:
 
         # init stage two:
         self.get_assets(self.asset_class, self.algorithm)
-
-        # get indicators?
-        # self.indicator_data = Indicators(self.broker, cli_args, self).data
 
     def get_assets(self, asset_class, algorithm):
         """ Second method of two stage init process. """
@@ -231,8 +229,7 @@ class AssetSelector:
 
             # Look for buy signals
             macd_signal = self.signaler.macd_signal.buy(df)
-            mfi_signal = self.signaler.mfi_signal.buy(df)
-            if macd_signal and mfi_signal:
+            if macd_signal:
                 # add the current symbol to the portfolio
                 self.portfolio.append(ass.symbol)
                 if len(self.portfolio) >= self.poolsize:
