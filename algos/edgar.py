@@ -4,7 +4,7 @@ from src.indicator_collection import Indicators as Indicators
 from src.edgar_interface import EdgarInterface
 from src.asset_selector import AssetSelector
 from src.broker import BrokerException
-from util import time_formatter, submit_order
+from util import time_from_timestamp
 from src.sentiment_analysis import SentimentAnalysis as Sent
 from src.twitter_interface import TwitterInterface
 from src.predictor import Predictor
@@ -27,7 +27,7 @@ def run(broker, args, edgar_token):
     trading         = False
     cash            = broker.cash
     portfolio_amount = broker.buying_power
-    # backdate        = time_formatter(time.time() - (604800 * 54))
+    # backdate        = time_from_timestamp(time.time() - (604800 * 54))
     asset_selector  = AssetSelector(broker, args, edgar_token=None)
     # tickers         = asset_selector.bullish_candlesticks()
     indicators      = Indicators(broker, args, asset_selector).data
@@ -66,11 +66,11 @@ def run(broker, args, edgar_token):
         quant = 10
 
         # then submit a buy order
-        submit_order(
-            api_reference=broker.alpaca_api,
-            ticker=trading_symbol,
-            qty=quant,
-            transaction_side="buy",
-            ttype="market",
-            time_in_force="ioc"
-        )
+        # submit_order(
+        #     api_reference=broker.alpaca_api,
+        #     ticker=trading_symbol,
+        #     qty=quant,
+        #     transaction_side="buy",
+        #     ttype="market",
+        #     time_in_force="ioc"
+        # )
