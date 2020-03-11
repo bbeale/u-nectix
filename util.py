@@ -160,56 +160,67 @@ def df2csv(dataframe, ticker):
         print("[+] File saved:\t{}".format(datafile))
 
 
-def parse_configs():
+def parse_configs(path=None):
     parser = configparser.ConfigParser()
-    try:
-        parser.read(os.path.relpath("config.ini"))
-    except FileExistsError as error:
-        raise error
+    if path is None:
+        try:
+            parser.read(os.path.relpath("config.ini"))
+        except FileExistsError as error:
+            raise error
+        else:
+            return parser
     else:
-        return parser
-
+        try:
+            parser.read(os.path.relpath(path))
+        except FileExistsError as error:
+            raise error
+        else:
+            return parser
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--algorithm",
         type=str,
         required=False,
-        help="the algorithm we want to trade with -- must be a valid file in the algos directory")
+        help="The algorithm we want to trade with -- must be a valid file in the algos directory")
     parser.add_argument("-b", "--backtest",
         required=False,
         action="store_true",
-        help="run in backtest mode if true, otherwise run in live mode")
+        help="Run in backtest mode if true, otherwise run in live mode")
     parser.add_argument("-c", "--crypto",
         required=False,
         action="store_true",
-        help="if true, trade cryptocurrency instead of stocks using the Kraken exchange.")
+        help="If true, trade cryptocurrency instead of stocks using the Kraken exchange.")
     parser.add_argument("-f", "--forex",
         required=False,
         action="store_true",
-        help="if true, trade forex instead of stocks using the Kraken exchange.")
+        help="If true, trade forex instead of stocks using the Kraken exchange.")
     parser.add_argument("-tp", "--testperiods",
         type=int,
         required=False,
-        help="number of periods to backtest")
+        help="Number of periods to backtest")
     parser.add_argument("-mx", "--max",
         type=float,
         required=False,
-        help="max price per share we are willing to accept")
+        help="Max price per share we are willing to accept")
     parser.add_argument("-mn", "--min",
         type=float,
         required=False,
-        help="min price per share we are willing to accept")
+        help="Min price per share we are willing to accept")
     parser.add_argument("-m", "--mode",
         type=str,
         required=False,
-        help="long or short")
+        help="Long or short")
     parser.add_argument("-p", "--period",
         type=str,
         required=False,
-        help="a period of time between candlestick bars, choices supported by Alpaca API are:  ")
+        help="A period of time between candlestick bars, choices supported by Alpaca API are:  ")
     parser.add_argument("-r", "--records",
         type=int,
         required=False,
-        help="number of records")
+        help="Number of records")
+    parser.add_argument("-C", "--cash",
+        type=float,
+        required=False,
+        help="If set, backtest with a simulated account balance. Otherwise, use Alpaca account balance.")
     return parser.parse_args()
