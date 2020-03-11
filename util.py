@@ -12,7 +12,7 @@ import json
 import os
 
 
-def time_formatter(time_stamp, time_format=None):
+def time_from_timestamp(time_stamp, time_format=None):
     """Return a formatted date in open market hours given a timestamp.
 
     :param time_stamp:
@@ -24,6 +24,12 @@ def time_formatter(time_stamp, time_format=None):
     if time_format is None:
         time_format = "%Y-%m-%dT09:30:00-04:00"
     return date.fromtimestamp(time_stamp).strftime(time_format)
+
+
+def time_from_datetime(dt):
+    if dt is None:
+        raise ValueError
+    return dt.strftime('%Y-%m-%dT%H:%M:%S.%f-04:00')
 
 
 def bullish_sequence(num1, num2, num3):
@@ -50,49 +56,6 @@ def long_bullish_sequence(num1, num2, num3, num4, num5):
     return num1 >= num2 >= num3 >= num4 >= num5
 
 
-def bullish_candlestick_patterns(c1, c2, c3):
-    """Pilfered from Alpaca Slack channel
-
-    :param c1:
-    :param c2:
-    :param c3:
-    :return:
-    """
-    pattern = None
-    # LOCH bullish
-    if c1.low < c1.open < c1.close <= c1.high and \
-            c1.high - c1.close < c1.open - c1.low and \
-            c1.close - c1.open < c1.open - c1.low:
-        pattern = "hammer"
-    if c1.low <= c1.open < c1.close < c1.high and \
-            c1.high - c1.close > c1.open - c1.low and \
-            c1.close - c1.open < c1.high - c1.close:
-        pattern = "inverseHammer"
-    # LCOH bearish
-    if c2.low < c2.close < c2.open < c2.high and \
-            c1.low <= c1.open < c1.close < c1.high and \
-            c1.open < c2.close and \
-            c1.close - c1.open > c2.open - c2.close:
-        pattern = "bullishEngulfing"
-    if c2.low < c2.close < c2.open < c2.high and \
-            c1.low <= c1.open < c1.close < c1.high and \
-            c1.open < c2.close and \
-            c1.close > c2.close + (c2.open - c2.close) / 2:
-        pattern = "piercingLine"
-    if c3.low < c3.close < c3.open < c3.high and \
-            c1.low <= c1.open < c1.close < c1.high and \
-            abs(c2.open - c2.close) < abs(c3.open - c3.close) and \
-            abs(c2.open - c2.close) < abs(c1.open - c1.close):
-        pattern = "morningStar"
-    if c3.low <= c3.open < c3.close < c3.high and \
-            c2.low <= c2.open < c2.close < c2.high and \
-            c1.low <= c1.open < c1.close < c1.high and \
-            c3.close <= c2.open and \
-            c2.close <= c1.open:
-        pattern = "threeWhiteSoldiers"
-    return pattern
-
-
 def get_returns(prices):
     """
 
@@ -115,28 +78,6 @@ def sort_returns(rets, num):
         ins.append(rets[i:i + num].tolist())
         outs.append(rets[i + num])
     return np.array(ins), np.array(outs)
-
-
-def set_candlestick_df(bars):
-    """Given a collection of candlestick bars, return a dataframe.
-
-    Dataframe should contain keys:
-        - time, open, high, low, close, volume
-
-    :param bars:
-    :return:
-    """
-    if not bars or bars is None:
-        raise ValueError("Bars cannot be none")
-
-    data            = pd.DataFrame(index=[bar.t for bar in bars if bar is not None])
-    data["open"]    = [bar.o for bar in bars if bar is not None]
-    data["high"]    = [bar.h for bar in bars if bar is not None]
-    data["low"]     = [bar.l for bar in bars if bar is not None]
-    data["close"]   = [bar.c for bar in bars if bar is not None]
-    data["volume"]  = [bar.v for bar in bars if bar is not None]
-
-    return data
 
 
 def num_bars(barset, length):
@@ -219,87 +160,67 @@ def df2csv(dataframe, ticker):
         print("[+] File saved:\t{}".format(datafile))
 
 
-def calculate_tolerable_risk(balance, risk_pct):
-
-    if not balance or balance is None or balance == 0:
-        raise ValueError("[!] valid balance is required.")
-
-    if not risk_pct or risk_pct is None or risk_pct == 0:
-        raise ValueError("[!] risk_pct cannot be zero.")
-
-    return round(float(balance * risk_pct), 2)
-
-
-def calculate_position_size(price, trading_balance, risk_pct=.10):
-    """Given a stock price, available trading balance, and a risk percentage, calculate a position size for a trade.
-
-    :param price:
-    :param trading_balance:
-    :param risk_pct:
-    :return:
-    """
-
-    if not price or price is None:
-        raise ValueError("[!] A price is required for this calculation.")
-
-    if not trading_balance or trading_balance is None:
-        raise ValueError("[!] A trading_balance is required for this calculation.")
-
-    if risk_pct == 0:
-        raise ValueError("[!] risk_pct cannot be zero.")
-
-    return int(trading_balance * risk_pct / price)
-
-def parse_configs():
+def parse_configs(path=None):
     parser = configparser.ConfigParser()
-    try:
-        parser.read(os.path.relpath("config.ini"))
-    except FileExistsError as error:
-        raise error
+    if path is None:
+        try:
+            parser.read(os.path.relpath("config.ini"))
+        except FileExistsError as error:
+            raise error
+        else:
+            return parser
     else:
-        return parser
-
+        try:
+            parser.read(os.path.relpath(path))
+        except FileExistsError as error:
+            raise error
+        else:
+            return parser
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--algorithm",
         type=str,
         required=False,
-        help="the algorithm we want to trade with -- must be a valid file in the algos directory")
+        help="The algorithm we want to trade with -- must be a valid file in the algos directory")
     parser.add_argument("-b", "--backtest",
         required=False,
         action="store_true",
-        help="run in backtest mode if true, otherwise run in live mode")
+        help="Run in backtest mode if true, otherwise run in live mode")
     parser.add_argument("-c", "--crypto",
         required=False,
         action="store_true",
-        help="if true, trade cryptocurrency instead of stocks using the Kraken exchange.")
+        help="If true, trade cryptocurrency instead of stocks using the Kraken exchange.")
     parser.add_argument("-f", "--forex",
         required=False,
         action="store_true",
-        help="if true, trade forex instead of stocks using the Kraken exchange.")
+        help="If true, trade forex instead of stocks using the Kraken exchange.")
     parser.add_argument("-tp", "--testperiods",
         type=int,
         required=False,
-        help="number of periods to backtest")
+        help="Number of periods to backtest")
     parser.add_argument("-mx", "--max",
         type=float,
         required=False,
-        help="max price per share we are willing to accept")
+        help="Max price per share we are willing to accept")
     parser.add_argument("-mn", "--min",
         type=float,
         required=False,
-        help="min price per share we are willing to accept")
+        help="Min price per share we are willing to accept")
     parser.add_argument("-m", "--mode",
         type=str,
         required=False,
-        help="long or short")
+        help="Long or short")
     parser.add_argument("-p", "--period",
         type=str,
         required=False,
-        help="a period of time between candlestick bars, choices supported by Alpaca API are:  ")
+        help="A period of time between candlestick bars, choices supported by Alpaca API are:  ")
     parser.add_argument("-r", "--records",
         type=int,
         required=False,
-        help="number of records")
+        help="Number of records")
+    parser.add_argument("-C", "--cash",
+        type=float,
+        required=False,
+        help="If set, backtest with a simulated account balance. Otherwise, use Alpaca account balance.")
     return parser.parse_args()

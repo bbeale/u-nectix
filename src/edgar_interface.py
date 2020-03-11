@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from util import time_formatter
+from util import time_from_timestamp
 from lib.edgar import (
     download_xml,
     calculate_transaction_amount,
@@ -32,7 +32,7 @@ class EdgarInterface:
 
         for ticker in self.dataframe.keys():
             fdate = self.dataframe[ticker]["time"].iloc[-7].strftime("%Y-%m-%d")
-            tdate = time_formatter(time.time(), time_format="%Y-%m-%d")
+            tdate = time_from_timestamp(time.time(), time_format="%Y-%m-%d")
             self.edgar_scores[ticker] = self.calculate_edgar_signal(ticker, fdate, tdate)
         return self.edgar_scores
 

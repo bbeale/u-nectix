@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from requests.exceptions import HTTPError
+from util import time_from_datetime
 import pandas as pd
 import time
 
@@ -198,7 +199,7 @@ class Broker(object):
         :param limit: API default is 50, with a limit of 500
         :param after: Include only pos
         :param until:
-        :param direction:
+         :param direction:
         :return:
         """
         result = None
@@ -598,6 +599,60 @@ class Broker(object):
         data["volume"]  = [bar.v for bar in bars if bar is not None]
 
         return data
+
+    def calculate_total_asset_value(self, positions, date):
+        """
+
+        :param positions:
+        :param date:
+        :return:
+        """
+        if len(positions.keys()) == 0:
+            return 0
+
+        total_value = 0
+        formatted_date = time_from_datetime(date)
+        barset = self.api.get_barset(symbols=positions.keys(), timeframe='day', limit=1, end=formatted_date)
+        for symbol in positions:
+            total_value += positions[symbol] * barset[symbol][0].o
+        return total_value
+
+    @staticmethod
+    def calculate_tolerable_risk(balance, risk_pct):
+        """
+
+        :param balance:
+        :param risk_pct:
+        :return:
+        """
+        if not balance or balance is None or balance == 0:
+            raise ValueError("[!] valid balance is required.")
+
+        if not risk_pct or risk_pct is None or risk_pct == 0:
+            raise ValueError("[!] risk_pct cannot be zero.")
+
+        return float(balance) * float(risk_pct)
+
+    @staticmethod
+    def calculate_position_size(price, trading_balance, risk_pct=.10):
+        """Given a stock price, available traselfding balance, and a risk percentage, calculate a position size for a trade.
+
+        :param price:
+        :param trading_balance:
+        :param risk_pct:
+        :return:
+        """
+
+        if not price or price is None:
+            raise ValueError("[!] A price is required for this calculation.")
+
+        if not trading_balance or trading_balance is None:
+            raise ValueError("[!] A trading_balance is required for this calculation.")
+
+        if risk_pct == 0:
+            raise ValueError("[!] risk_pct cannot be zero.")
+
+        return int(trading_balance * risk_pct / price)
 
 
 class BrokerException(HTTPError, Exception):

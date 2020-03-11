@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from src.finta_interface import Indicator as I, IndicatorException
-from py_trade_signal.exception import TradeSignalException
-from py_trade_signal import TradeSignal
 from src.edgar_interface import EdgarInterface
-from util import time_formatter, num_bars
+from util import time_from_timestamp, num_bars
+from py_trade_signal import TradeSignal
 import json
 import time
+
+# from src.finta_interface import Indicator as I, IndicatorException
+# from py_trade_signal.exception import TradeSignalException
 
 
 class AssetSelector:
@@ -73,9 +74,6 @@ class AssetSelector:
 
         # init stage two:
         self.get_assets(self.asset_class, self.algorithm)
-
-        # get indicators?
-        # self.indicator_data = Indicators(self.broker, cli_args, self).data
 
     def get_assets(self, asset_class, algorithm):
         """ Second method of two stage init process. """
@@ -231,8 +229,7 @@ class AssetSelector:
 
             # Look for buy signals
             macd_signal = self.signaler.macd_signal.buy(df)
-            mfi_signal = self.signaler.mfi_signal.buy(df)
-            if macd_signal and mfi_signal:
+            if macd_signal:
                 # add the current symbol to the portfolio
                 self.portfolio.append(ass.symbol)
                 if len(self.portfolio) >= self.poolsize:
@@ -362,11 +359,11 @@ class AssetSelector:
             raise NotImplementedError
 
         if not backdate or backdate is None:
-            # backdate = time_formatter(time.time() - 604800, time_format="%Y-%m-%d")
+            # backdate = time_from_timestamp(time.time() - 604800, time_format="%Y-%m-%d")
             # using a longer window only for debugging purposes -- just to make sure I have results quickly
-            backdate = time_formatter(time.time() - (604800 * 26), time_format="%Y-%m-%d")
+            backdate = time_from_timestamp(time.time() - (604800 * 26), time_format="%Y-%m-%d")
 
-        date = time_formatter(time.time(), time_format="%Y-%m-%d")
+        date = time_from_timestamp(time.time(), time_format="%Y-%m-%d")
 
         # Filter the assets down to just those on NASDAQ.
         active_assets = self.broker.get_assets()
@@ -402,12 +399,12 @@ class AssetSelector:
         # If none are found, lengthen the lookback window a couple times
         if filings["total"] is 0:
             print("[!] No recent filings found for {}. Looking back 2 weeks".format(asset.symbol))
-            backdate = time_formatter(time.time() - (604800 * 2), time_format="%Y-%m-%d")
+            backdate = time_from_timestamp(time.time() - (604800 * 2), time_format="%Y-%m-%d")
             filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
 
         if filings["total"] is 0:
             print("[!] No filings found. Looking back 4 weeks")
-            backdate = time_formatter(time.time() - (604800 * 4), time_format="%Y-%m-%d")
+            backdate = time_from_timestamp(time.time() - (604800 * 4), time_format="%Y-%m-%d")
             filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
 
         if filings["total"] > 0:
@@ -424,7 +421,7 @@ class AssetSelector:
         """
         for i in self.recent_filings.keys():
             # I think I need my original 13 week window here for consistency with get_assets_by_candlestick_pattern
-            backdate = time_formatter(time.time() - (604800 * 13))
+            backdate = time_from_timestamp(time.time() - (604800 * 13))
 
             barset = self.broker.get_barset(i.symbol, "1D", backdate)
 

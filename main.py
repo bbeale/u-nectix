@@ -13,6 +13,7 @@ import krakenex
 
 def main(config, args):
 
+    # are we trading forex?
     if args.forex:
         print("[-] do stuff with Oanda.")
         try:
@@ -26,7 +27,10 @@ def main(config, args):
             raise error
 
         # how much money can we use to open new positions?
-        # print("[?] ${} is available in cash.".format(broker.trade_balance["tb"]))
+        if args.cash is not None:
+            print("[?] ${} in simulated account balance.".format(args.cash))
+        # else:
+        #     print("[?] ${} is available in cash.".format(broker.trade_balance["tb"]))
 
         """Run the algorithm."""
         if args.pair is None:
@@ -63,7 +67,10 @@ def main(config, args):
                 raise BrokerException("[!] Insufficient balances across coins or account is currently restricted from trading.")
 
         # how much money can we use to open new positions?
-        print("[?] ${} is available in cash.".format(broker.trade_balance["tb"]))
+        if args.cash is not None:
+            print("[?] ${} in simulated account balance.".format(args.cash))
+        else:
+            print("[?] ${} is available in cash.".format(broker.trade_balance["tb"]))
 
         """Run the algorithm."""
         if args.pair is None:
@@ -97,7 +104,10 @@ def main(config, args):
                 raise BrokerException("[!] Account is currently restricted from trading.")
 
         # how much money can we use to open new positions?
-        print("[?] ${} is available in cash.".format(broker.cash))
+        if args.cash is not None:
+            print("[?] ${} in simulated account balance.".format(args.cash))
+        else:
+            print("[?] ${} is available in cash.".format(broker.cash))
 
         """Run the algorithm."""
         if args.mode is None:
