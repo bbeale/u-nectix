@@ -23,10 +23,14 @@ def run(broker, args):
         days_to_test = 30
 
     # initial trade state
-    cash            = float(broker.cash)
-    risk_amount     = broker.calculate_tolerable_risk(cash, .10)
-    stocks_to_hold  = None
-    asset_selector  = AssetSelector(broker, args, edgar_token=None)
+    if args.cash is not None and type(args.cash) == float:
+        cash = args.cash
+    else:
+        cash = float(broker.cash)
+    starting_amount = cash
+    risk_amount = broker.calculate_tolerable_risk(cash, .10)
+    stocks_to_hold = None
+    asset_selector = AssetSelector(broker, args, edgar_token=None)
 
     """Trying to set up something similar to that in here
     https://medium.com/automation-generation/building-and-backtesting-a-stock-trading-script-in-python-for-beginners-105f8976b473
@@ -42,23 +46,29 @@ def run(broker, args):
         now = datetime.now(timezone("EST"))
         beginning = now - timedelta(days=days_to_test)
         calendars = broker.get_calendar(start_date=beginning.strftime("%Y-%m-%d"), end_date=now.strftime("%Y-%m-%d"))
-        shares = {}
+        portfolio = {}
         cal_index = 0
         for calendar in calendars:
             # see how much we got back by holding the last day's picks overnight
-            cash += broker.calculate_total_asset_value(shares, calendar.date)
+            cash += broker.calculate_total_asset_value(portfolio, calendar.date)
             print("[*] Cash account value on {}: ${}".format(calendar.date.strftime("%Y-%m-%d"), round(cash, 2)),
                 "Risk amount: ${}".format(round(risk_amount, 2)))
 
             if cal_index == len(calendars) - 1:
                 print("[*] End of the backtesting window.")
+                print("[*] Starting account value: {}".format(starting_amount))
+                print("[*] Holdings: ")
+                for k, v in portfolio.items():
+                    print(" - Symbol: {}, value: {}".format(k, str(round(v, 2))))
+                print("[*] Account value: {}".format(round(cash, 2)))
+                print("[*] Change from starting value: ${}". format(round(float(cash) - float(starting_amount), 2)))
                 break
 
             # calculate position size based on volume/momentum rating
             ratings = volume_momentum_ratings(symbols, broker, timezone("EST").localize(calendar.date), window_size=10)
-            shares = portfolio_allocation(ratings, risk_amount)
+            portfolio = portfolio_allocation(ratings, risk_amount)
             for _, row in ratings.iterrows():
-                shares_to_buy = int(shares[row["symbol"]])
+                shares_to_buy = int(portfolio[row["symbol"]])
                 cost = row["price"] * shares_to_buy
                 cash -= cost
 
@@ -94,9 +104,9 @@ def run(broker, args):
                         print("[+] Buying position(s).")
                         portfolio_cash = float(broker.api.get_account().cash)
                         ratings = volume_momentum_ratings(symbols, broker, stocks_to_hold, window_size=10)
-                        allocation = portfolio_allocation(ratings, portfolio_cash)
-                        for symbol in allocation:
-                            broker.api.submit_order(symbol=symbol, qty=allocation[symbol], side="buy", type="market",
+                        portfolio = portfolio_allocation(ratings, portfolio_cash)
+                        for symbol in portfolio:
+                            broker.api.submit_order(symbol=symbol, qty=portfolio[symbol], side="buy", type="market",
                                 time_in_force="day")
                         print("[*] Position(s) bought.")
                         bought_today = True
