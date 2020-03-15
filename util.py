@@ -177,6 +177,7 @@ def parse_configs(path=None):
         else:
             return parser
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--algorithm",
