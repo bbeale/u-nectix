@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from pypfopt.efficient_frontier import EfficientFrontier
+from pypfopt import expected_returns
+from pypfopt import risk_models
+from py_trade_signal import TradeSignal
 from src.edgar_interface import EdgarInterface
 from util import time_from_timestamp, num_bars
-from py_trade_signal import TradeSignal
 import json
 import time
 
+# from src.broker import BrokerException
 # from src.finta_interface import Indicator as I, IndicatorException
 # from py_trade_signal.exception import TradeSignalException
+# from pypfopt.cla import CLA
 
 
 class AssetSelector:
@@ -191,16 +196,64 @@ class AssetSelector:
             if close > self.max_stock_price or close < self.min_stock_price:
                 continue
 
+            # throw it away if the candlestick pattern is not bullish
             pattern = self.candle_pattern_direction(df)
             if pattern in ["bear", None]:
                 continue
 
-            if pattern is "bull":
-                # add the current symbol to the portfolio
+            # assume the current symbol pattern is bullish and add to the portfolio
+            self.portfolio.append(ass.symbol)
+            if len(self.portfolio) >= self.poolsize:
+                # exit the filter process
+                break
+
+    def bullish_volume_efficient_frontier(self):
+        """
+        Given a list of assets, evaluate which ones are bullish and return a sample of each.
+
+        These method names should correspond with files in the algos/ directory.
+        """
+        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
+            raise AssetValidationException("[!] Invalid pool size.")
+
+        self.portfolio = []
+        limit = 50
+        while len(self.portfolio) < self.poolsize:
+            for ass in self.tradeable_assets:
+                """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
+                df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+
+                # guard clauses to make sure we have enough data to work with
+                if df is None or len(df) != limit:
+                    continue
+
+                # throw it away if the price is out of our min-max range
+                close = df["close"].iloc[-1]
+                if close > self.max_stock_price or close < self.min_stock_price:
+                    continue
+
+                # throw it away if the candlestick pattern is not bullish
+                pattern = self.candle_pattern_direction(df)
+                if pattern in ["bear", None]:
+                    continue
+
+                # assume the current symbol pattern is bullish and add to the portfolio
                 self.portfolio.append(ass.symbol)
                 if len(self.portfolio) >= self.poolsize:
                     # exit the filter process
                     break
+
+        # EF calculation
+        df = self.broker.api.get_barset(symbols=",".join(self.portfolio), timeframe="day", limit=limit)
+
+        for k, v in df.items():
+            df[k] = v.df["close"]
+
+        mean_return = expected_returns.mean_historical_return(df)
+        sample_cov_matrix = risk_models.sample_cov(df)
+        frontier = EfficientFrontier(mean_return, sample_cov_matrix)
+        # reset instance portfolio to contents of frontier.tickers
+        self.portfolio = frontier.tickers
 
     def bullish_macd_overnight_hold(self):
         """
@@ -248,19 +301,26 @@ class AssetSelector:
         for ass in self.tradeable_assets:
             limit = 1000
             df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+
+            # guard clauses to make sure we have enough data to work with
             if df is None or len(df) != limit:
                 continue
 
+            # throw it away if the price is out of our min-max range
+            close = df["close"].iloc[-1]
+            if close > self.max_stock_price or close < self.min_stock_price:
+                continue
+
+            # throw it away if the candlestick pattern is not bearish
             pattern = self.candle_pattern_direction(df)
             if pattern in ["bull", None]:
                 continue
 
-            if pattern is "bear":
-                # add the current symbol to the portfolio
-                self.portfolio.append(ass.symbol)
-                if len(self.portfolio) >= self.poolsize:
-                    # exit the filter process
-                    break
+            # assume the current symbol pattern is bearish and add to the portfolio
+            self.portfolio.append(ass.symbol)
+            if len(self.portfolio) >= self.poolsize:
+                # exit the filter process
+                break
 
     def top_gainer_overnight_reversal(self):
         """
@@ -285,6 +345,57 @@ class AssetSelector:
                 if len(self.portfolio) >= self.poolsize:
                     # exit the filter process
                     break
+
+    def top_gainer_efficient_frontier(self):
+        """
+        Use Polygon endpoint to populate a watchlist of top "gainers".
+        """
+        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
+            raise AssetValidationException("[!] Invalid pool size.")
+
+        tmp = []
+        self.portfolio = []
+
+        gainers = self.broker.api.polygon.gainers_losers()
+        for symbol in range(len(gainers)):
+            ticker = gainers[symbol].ticker
+            ass = self.broker.get_asset(ticker)
+
+            if ass is None:
+                continue
+
+            if ass.symbol in ["", None]:
+                continue
+
+            if ass is not None and ass.tradable:
+
+                limit = 1000
+                df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+                # guard clauses to make sure we have enough data to work with
+                if df is None or len(df) != limit:
+                    continue
+
+                # throw it away if the price is out of our min-max range
+                close = df["close"].iloc[-1]
+                if close > self.max_stock_price or close < self.min_stock_price:
+                    continue
+
+                tmp.append(ass.symbol)
+                # # add the current symbol to the portfolio
+                # self.portfolio.append(ass.symbol)
+                # if len(self.portfolio) >= self.poolsize:
+                #     # exit the filter process
+                #     break
+        df = self.broker.api.get_barset(symbols=",".join(tmp), timeframe="day", limit=1000)
+
+        for k, v in df.items():
+            df[k] = v.df["close"]
+
+        mean_return = expected_returns.mean_historical_return(df)
+        sample_cov_matrix = risk_models.sample_cov(df)
+        frontier = EfficientFrontier(mean_return, sample_cov_matrix)
+        self.portfolio = frontier.tickers
+        return frontier
 
     def top_loser_overnight_reversal(self):
         """
