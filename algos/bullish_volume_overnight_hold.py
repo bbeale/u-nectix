@@ -30,7 +30,7 @@ def run(broker, args):
     starting_amount = cash
     risk_amount = broker.calculate_tolerable_risk(cash, .10)
     stocks_to_hold = None
-    asset_selector = AssetSelector(broker, args, edgar_token=None, poolsize=20)
+    asset_selector = AssetSelector(broker, args, edgar_token=None)
 
     """Trying to set up something similar to that in here
     https://medium.com/automation-generation/building-and-backtesting-a-stock-trading-script-in-python-for-beginners-105f8976b473
