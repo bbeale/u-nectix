@@ -122,6 +122,8 @@ def main(config, args):
             args.max = 26
         if args.min is None:
             args.min = 6
+        if args.poolsize is None:
+            args.poolsize = 5
 
     # try and import the corresponding Python file from algos
     try:

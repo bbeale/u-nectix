@@ -17,7 +17,7 @@ import time
 
 class AssetSelector:
 
-    def __init__(self, broker, cli_args, edgar_token=None, poolsize=5):
+    def __init__(self, broker, cli_args, edgar_token=None):
         """Initialize the asset selector with an optional edgar token
 
         TODO: Incorporate Twitter api and trade signals
@@ -30,6 +30,7 @@ class AssetSelector:
         https://api.stocktwits.com/developers/docs/api
 
         :param broker:
+        :param cli_args:
         :param edgar_token:
         """
         if not broker or broker is None:
@@ -61,13 +62,17 @@ class AssetSelector:
         if "short" in cli_args.mode or "long" in cli_args.mode:
             self.shorts_wanted = True
 
+        if cli_args.poolsize is not None:
+            self.poolsize = cli_args.poolsize
+        else:
+            self.poolsize = 5
+
         self.broker = broker
 
         if edgar_token is not None:
             self.edgar_token = edgar_token
             self.ei = EdgarInterface(self.edgar_token)
 
-        self.poolsize = poolsize
         self.algorithm = cli_args.algorithm
         self.tradeable_assets = None
         self.recent_filings = None

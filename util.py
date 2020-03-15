@@ -224,4 +224,8 @@ def parse_args():
         type=float,
         required=False,
         help="If set, backtest with a simulated account balance. Otherwise, use Alpaca account balance.")
+    parser.add_argument("-P", "--poolsize",
+        type=int,
+        required=False,
+        help="Number of stocks we want in our pool to choose from.")
     return parser.parse_args()
