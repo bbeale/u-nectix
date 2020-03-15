@@ -18,10 +18,10 @@ class KrakDealer:
         self.pair = pair
         self.trade_balance = self.get_trade_balance()
         self.trading_account = self.get_account()
-        self.trading_blocked = True if self.trade_balance["tb"] == float(0) else False
+        self.trading_blocked = True if self.trade_balance[self.pair]["tb"] == float(0) else False
 
     def get_account(self):
-        return self.api.get_account_balance()[self.pair]
+        return self.api.get_account_balance()
 
     def get_trade_balance(self, asset="XBT"):
         return self.api.get_trade_balance(asset=asset)
