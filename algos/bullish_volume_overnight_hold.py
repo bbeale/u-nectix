@@ -206,5 +206,7 @@ def portfolio_allocation(data, cash):
     total_rating = data["rating"].sum()
     shares = {}
     for _, row in data.iterrows():
-        shares[row["symbol"]] = float(row["rating"]) / float(total_rating) * float(cash) / float(row["price"])
+        num_shares = float(row["rating"]) / float(total_rating) * float(cash) / float(row["price"])
+        int_shares = int(num_shares)
+        shares[row["symbol"]] = int_shares
     return shares
