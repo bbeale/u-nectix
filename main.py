@@ -32,20 +32,6 @@ def main(config, args):
         # else:
         #     print("[?] ${} is available in cash.".format(broker.trade_balance["tb"]))
 
-        """Run the algorithm."""
-        if args.pair is None:
-            args.pair = "USDEUR"
-        if args.mode is None:
-            args.mode = 'long'
-        if args.period is None:
-            args.period = "1D"
-        if args.algorithm is None:
-            args.algorithm = "bullish_overnight_forex_hold"
-        if args.testperiods is None:
-            args.testperiods = 30
-
-        # bullish_overnight_forex_hold.run(broker, args)
-
     # are we trading crypto?
     if args.crypto:
         print("[-] do stuff with Kraken.")
@@ -72,20 +58,6 @@ def main(config, args):
         else:
             print("[?] ${} is available in cash.".format(broker.trade_balance["tb"]))
 
-        """Run the algorithm."""
-        if args.pair is None:
-            args.pair = "XBTUSD"
-        if args.mode is None:
-            args.mode = 'long'
-        if args.period is None:
-            args.period = "1D"
-        if args.algorithm is None:
-            args.algorithm = "bullish_overnight_crypto_hold"
-        if args.testperiods is None:
-            args.testperiods = 30
-
-        # bullish_overnight_crypto_hold.run(broker, args)
-
     else:
         # we must be trading stocks
         try:
@@ -108,22 +80,6 @@ def main(config, args):
             print("[?] ${} in simulated account balance.".format(args.cash))
         else:
             print("[?] ${} is available in cash.".format(broker.cash))
-
-        """Run the algorithm."""
-        if args.mode is None:
-            args.mode = 'long'
-        if args.period is None:
-            args.period = "1D"
-        if args.algorithm is None:
-            args.algorithm = "bullish_volume_overnight_hold"
-        if args.testperiods is None:
-            args.testperiods = 30
-        if args.max is None:
-            args.max = 26
-        if args.min is None:
-            args.min = 6
-        if args.poolsize is None:
-            args.poolsize = 5
 
     # try and import the corresponding Python file from algos
     try:

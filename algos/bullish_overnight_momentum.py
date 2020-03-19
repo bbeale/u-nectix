@@ -17,6 +17,19 @@ def run(broker, args):
     else:
         broker = broker
 
+    if args.period is None:
+        args.period = "1D"
+    if args.algorithm is None:
+        args.algorithm = "bullish_overnight_momentum"
+    if args.testperiods is None:
+        args.testperiods = 30
+    if args.max is None:
+        args.max = 26
+    if args.min is None:
+        args.min = 6
+    if args.poolsize is None:
+        args.poolsize = 5
+
     if args.testperiods is not None and type(args.testperiods) == int:
         days_to_test = args.testperiods
     else:
@@ -27,8 +40,13 @@ def run(broker, args):
         cash = args.cash
     else:
         cash = float(broker.cash)
+
+    if args.risk_pct is not None and type(args.risk_pct) in [int, float]:
+        risk_pct = args.risk_pct
+    else:
+        risk_pct = .10
     starting_amount = cash
-    risk_amount = broker.calculate_tolerable_risk(cash, .10)
+    risk_amount = broker.calculate_tolerable_risk(cash, risk_pct)
     stocks_to_hold = None
     asset_selector = AssetSelector(broker, args, edgar_token=None)
 
@@ -41,6 +59,7 @@ def run(broker, args):
     
     """
     symbols = asset_selector.portfolio
+    print("[*] Trading assets: {}".format(",".join(symbols)))
     if args.backtest:
         # TODO: Make all time usages consistent
         now = datetime.now(timezone("EST"))
@@ -59,7 +78,7 @@ def run(broker, args):
                 print("[*] Starting account value: {}".format(starting_amount))
                 print("[*] Holdings: ")
                 for k, v in portfolio.items():
-                    print(" - Symbol: {}, value: {}".format(k, str(round(v, 2))))
+                    print(" - Symbol: {}, Shares: {}".format(k, str(round(v, 2))))
                 print("[*] Account value: {}".format(round(cash, 2)))
                 print("[*] Change from starting value: ${}". format(round(float(cash) - float(starting_amount), 2)))
                 break
@@ -73,7 +92,7 @@ def run(broker, args):
                 cash -= cost
 
                 # calculate the amount we want to risk on the next trade
-                risk_amount = broker.calculate_tolerable_risk(cash, .10)
+                risk_amount = broker.calculate_tolerable_risk(cash, risk_pct)
             cal_index += 1
     else:
         cycle = 0
@@ -206,6 +225,6 @@ def portfolio_allocation(data, cash):
     total_rating = data["rating"].sum()
     shares = {}
     for _, row in data.iterrows():
-        num_shares = float(row["rating"]) / float(total_rating) * float(cash) / float(row["price"])
+        num_shares = int(float(row["rating"]) / float(total_rating) * float(cash) / float(row["price"]))
         shares[row["symbol"]] = num_shares
     return shares

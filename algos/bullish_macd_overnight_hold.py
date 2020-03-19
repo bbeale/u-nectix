@@ -17,6 +17,19 @@ def run(broker, args):
     else:
         broker = broker
 
+    if args.period is None:
+        args.period = "1D"
+    if args.algorithm is None:
+        args.algorithm = "bullish_macd_overnight_hold"
+    if args.testperiods is None:
+        args.testperiods = 30
+    if args.max is None:
+        args.max = 26
+    if args.min is None:
+        args.min = 6
+    if args.poolsize is None:
+        args.poolsize = 5
+
     if args.testperiods is not None and type(args.testperiods) == int:
         days_to_test = args.testperiods
     else:
