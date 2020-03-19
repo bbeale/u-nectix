@@ -59,7 +59,7 @@ class AssetSelector:
         else:
             self.min_stock_price = 5
 
-        if "short" in cli_args.mode or "long" in cli_args.mode:
+        if "bear" in cli_args.algorithm:
             self.shorts_wanted = True
 
         if cli_args.poolsize is not None:
@@ -176,7 +176,7 @@ class AssetSelector:
 
         return direction
 
-    def bullish_volume_overnight_hold(self):
+    def bullish_overnight_momentum(self):
         """
         Given a list of assets, evaluate which ones are bullish and return a sample of each.
 
