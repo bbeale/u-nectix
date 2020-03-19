@@ -17,7 +17,7 @@ class TestAssetSelector(TestCase):
     if args.period is None:
         args.period = "1D"
     if args.algorithm is None:
-        args.algorithm = "bullish_volume_overnight_hold"
+        args.algorithm = "bullish_overnight_momentum"
     if args.testperiods is None:
         args.testperiods = 30
     if args.max is None:
