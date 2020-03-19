@@ -196,7 +196,7 @@ def parse_args():
         required=False,
         action="store_true",
         help="If true, trade forex instead of stocks using the Kraken exchange.")
-    parser.add_argument("-tp", "--testperiods",
+    parser.add_argument("-t", "--testperiods",
         type=int,
         required=False,
         help="Number of periods to backtest")
@@ -208,18 +208,14 @@ def parse_args():
         type=float,
         required=False,
         help="Min price per share we are willing to accept")
-    parser.add_argument("-m", "--mode",
-        type=str,
-        required=False,
-        help="Long or short")
     parser.add_argument("-p", "--period",
         type=str,
         required=False,
         help="A period of time between candlestick bars, choices supported by Alpaca API are:  ")
-    parser.add_argument("-r", "--records",
-        type=int,
+    parser.add_argument("-r", "--risk_pct",
+        type=float,
         required=False,
-        help="Number of records")
+        help="Percentage of trading balance to risk per trade.")
     parser.add_argument("-C", "--cash",
         type=float,
         required=False,
