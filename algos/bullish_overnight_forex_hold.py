@@ -17,8 +17,6 @@ def run(broker, args):
 
     if args.pair is None:
         args.pair = "USDEUR"
-    if args.mode is None:
-        args.mode = 'long'
     if args.period is None:
         args.period = "1D"
     if args.algorithm is None:

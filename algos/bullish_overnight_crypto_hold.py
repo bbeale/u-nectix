@@ -18,8 +18,6 @@ def run(broker, args):
     """Run the algorithm."""
     if args.pair is None:
         args.pair = "XBTUSD"
-    if args.mode is None:
-        args.mode = 'long'
     if args.period is None:
         args.period = "1D"
     if args.algorithm is None:
