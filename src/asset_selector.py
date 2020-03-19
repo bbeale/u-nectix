@@ -287,7 +287,8 @@ class AssetSelector:
 
             # Look for buy signals
             macd_signal = self.signaler.macd_signal.buy(df)
-            if macd_signal:
+            mfi_signal = self.signaler.mfi_signal.buy(df)
+            if macd_signal and mfi_signal:
                 # add the current symbol to the portfolio
                 self.portfolio.append(ass.symbol)
                 if len(self.portfolio) >= self.poolsize:
