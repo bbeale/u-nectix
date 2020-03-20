@@ -30,11 +30,6 @@ def run(broker, args):
     if args.poolsize is None:
         args.poolsize = 5
 
-    if args.testperiods is not None and type(args.testperiods) == int:
-        days_to_test = args.testperiods
-    else:
-        days_to_test = 30
-
     # initial trade state
     if args.cash is not None and type(args.cash) == float:
         cash = args.cash
@@ -63,7 +58,7 @@ def run(broker, args):
     if args.backtest:
         # TODO: Make all time usages consistent
         now = datetime.now(timezone("EST"))
-        beginning = now - timedelta(days=days_to_test)
+        beginning = now - timedelta(days=args.testperiods)
         calendars = broker.get_calendar(start_date=beginning.strftime("%Y-%m-%d"), end_date=now.strftime("%Y-%m-%d"))
         portfolio = {}
         cal_index = 0
@@ -122,7 +117,7 @@ def run(broker, args):
                     if time_until_close.seconds <= 120:
                         print("[+] Buying position(s).")
                         portfolio_cash = float(broker.api.get_account().cash)
-                        ratings = volume_momentum_ratings(symbols, broker, stocks_to_hold, window_size=10)
+                        ratings = volume_momentum_ratings(symbols, broker, window_size=10)
                         portfolio = portfolio_allocation(ratings, portfolio_cash)
                         for symbol in portfolio:
                             broker.api.submit_order(symbol=symbol, qty=portfolio[symbol], side="buy", type="market",
@@ -207,7 +202,7 @@ def volume_momentum_ratings(symbols, broker, algo_time=None, window_size=5):
                 if rating > 0:
                     ratings = ratings.append({
                         "symbol": symbol,
-                        "rating": price_change/bars[0].c * volume_factor,
+                        "rating": rating,
                         "price": price
                     }, ignore_index=True)
         index += 200
