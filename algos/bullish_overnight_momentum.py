@@ -30,7 +30,6 @@ def run(broker, args):
     if args.poolsize is None:
         args.poolsize = 5
 
-    # initial trade state
     if args.cash is not None and type(args.cash) == float:
         cash = args.cash
     else:
@@ -40,9 +39,10 @@ def run(broker, args):
         risk_pct = args.risk_pct
     else:
         risk_pct = .10
+
+    # initial trade state
     starting_amount = cash
     risk_amount = broker.calculate_tolerable_risk(cash, risk_pct)
-    stocks_to_hold = None
     asset_selector = AssetSelector(broker, args, edgar_token=None)
 
     """Trying to set up something similar to that in here
@@ -64,7 +64,8 @@ def run(broker, args):
         cal_index = 0
         for calendar in calendars:
             # see how much we got back by holding the last day's picks overnight
-            cash += broker.calculate_total_asset_value(portfolio, calendar.date)
+            asset_value = broker.calculate_total_asset_value(portfolio, calendar.date)
+            cash += asset_value
             print("[*] Cash account value on {}: ${}".format(calendar.date.strftime("%Y-%m-%d"), round(cash, 2)),
                 "Risk amount: ${}".format(round(risk_amount, 2)))
 
@@ -79,7 +80,7 @@ def run(broker, args):
                 break
 
             # calculate position size based on volume/momentum rating
-            ratings = volume_momentum_ratings(symbols, broker, timezone("EST").localize(calendar.date), window_size=10)
+            ratings = get_ratings(symbols, broker, timezone("EST").localize(calendar.date), window_size=10)
             portfolio = portfolio_allocation(ratings, risk_amount)
             for _, row in ratings.iterrows():
                 shares_to_buy = int(portfolio[row["symbol"]])
@@ -117,7 +118,7 @@ def run(broker, args):
                     if time_until_close.seconds <= 120:
                         print("[+] Buying position(s).")
                         portfolio_cash = float(broker.api.get_account().cash)
-                        ratings = volume_momentum_ratings(symbols, broker, window_size=10)
+                        ratings = get_ratings(symbols, broker, window_size=10)
                         portfolio = portfolio_allocation(ratings, portfolio_cash)
                         for symbol in portfolio:
                             broker.api.submit_order(symbol=symbol, qty=portfolio[symbol], side="buy", type="market",
@@ -140,7 +141,7 @@ def run(broker, args):
             cycle += 1
 
 
-def volume_momentum_ratings(symbols, broker, algo_time=None, window_size=5):
+def get_ratings(symbols, broker, algo_time=None, window_size=5):
     """Calculate trade decision based on standard deviation of past volumes.
 
     Per Medium article:
@@ -220,6 +221,8 @@ def portfolio_allocation(data, cash):
     total_rating = data["rating"].sum()
     shares = {}
     for _, row in data.iterrows():
-        num_shares = int(float(row["rating"]) / float(total_rating) * float(cash) / float(row["price"]))
-        shares[row["symbol"]] = num_shares
+        shares[row["symbol"]] = int(float(row["rating"]) / float(total_rating) * float(cash) / float(row["price"]))
+    # debug
+    for k, v in shares.items():
+        print("[*] Ticker: {}, Shares: {}".format(k, v))
     return shares

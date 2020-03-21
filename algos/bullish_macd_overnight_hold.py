@@ -7,10 +7,6 @@ from pytz import timezone
 from finta import TA
 import pandas as pd
 
-# from util import time_from_datetime
-# import statistics
-# import time
-
 
 def run(broker, args):
 
@@ -57,7 +53,8 @@ def run(broker, args):
         cal_index = 0
         for calendar in calendars:
             # see how much we got back by holding the last day's picks overnight
-            cash += broker.calculate_total_asset_value(portfolio, calendar.date)
+            asset_value = broker.calculate_total_asset_value(portfolio, calendar.date)
+            cash += asset_value
             print("[*] Cash account value on {}: ${}".format(calendar.date.strftime("%Y-%m-%d"), round(cash, 2)),
                 "Risk amount: ${}".format(round(risk_amount, 2)))
 
@@ -77,7 +74,7 @@ def run(broker, args):
             for _, row in ratings.iterrows():
                 # "Buy" our shares on that day and subtract the cost.
                 shares_to_buy = int(portfolio[row['symbol']])
-                cost = round(round(row['price'], 2) * shares_to_buy, 2)
+                cost = row['close'] * shares_to_buy
                 cash -= cost
 
                 # calculate the amount we want to risk on the next trade
@@ -152,5 +149,8 @@ def portfolio_allocation(data, cash):
     total_rating = data['rating'].sum()
     shares = {}
     for _, row in data.iterrows():
-        shares[row['symbol']] = float(row['rating']) / float(total_rating) * float(cash) / float(row['close'])
+        shares[row['symbol']] = int(float(row['rating']) / float(total_rating) * float(cash) / float(row['close']))
+    # debug
+    for k, v in shares.items():
+        print("[*] Ticker: {}, Shares: {}".format(k, v))
     return shares
