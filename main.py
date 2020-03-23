@@ -83,7 +83,7 @@ def main(config, args):
 
     # try and import the corresponding Python file from algos
     try:
-        algorithm = import_module(f"algos.{args.algorithm}")
+        algorithm = import_module(f"algos.{args.algorithm}", package="Algorithm")
     except ImportError as error:
         raise error
     else:
