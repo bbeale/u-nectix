@@ -177,6 +177,7 @@ def parse_configs(path=None):
         else:
             return parser
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--algorithm",
@@ -195,7 +196,7 @@ def parse_args():
         required=False,
         action="store_true",
         help="If true, trade forex instead of stocks using the Kraken exchange.")
-    parser.add_argument("-tp", "--testperiods",
+    parser.add_argument("-t", "--testperiods",
         type=int,
         required=False,
         help="Number of periods to backtest")
@@ -207,20 +208,20 @@ def parse_args():
         type=float,
         required=False,
         help="Min price per share we are willing to accept")
-    parser.add_argument("-m", "--mode",
-        type=str,
-        required=False,
-        help="Long or short")
     parser.add_argument("-p", "--period",
         type=str,
         required=False,
         help="A period of time between candlestick bars, choices supported by Alpaca API are:  ")
-    parser.add_argument("-r", "--records",
-        type=int,
+    parser.add_argument("-r", "--risk_pct",
+        type=float,
         required=False,
-        help="Number of records")
+        help="Percentage of trading balance to risk per trade.")
     parser.add_argument("-C", "--cash",
         type=float,
         required=False,
         help="If set, backtest with a simulated account balance. Otherwise, use Alpaca account balance.")
+    parser.add_argument("-P", "--poolsize",
+        type=int,
+        required=False,
+        help="Number of stocks we want in our pool to choose from.")
     return parser.parse_args()

@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from requests.exceptions import HTTPError
-from util import time_from_datetime
 import pandas as pd
 import time
+
+
+class BrokerException(HTTPError, Exception):
+    pass
+
+
+class BrokerValidationException(ValueError):
+    pass
 
 
 class Broker(object):
@@ -600,23 +607,6 @@ class Broker(object):
 
         return data
 
-    def calculate_total_asset_value(self, positions, date):
-        """
-
-        :param positions:
-        :param date:
-        :return:
-        """
-        if len(positions.keys()) == 0:
-            return 0
-
-        total_value = 0
-        formatted_date = time_from_datetime(date)
-        barset = self.api.get_barset(symbols=positions.keys(), timeframe='day', limit=1, end=formatted_date)
-        for symbol in positions:
-            total_value += positions[symbol] * barset[symbol][0].o
-        return total_value
-
     @staticmethod
     def calculate_tolerable_risk(balance, risk_pct):
         """
@@ -653,11 +643,3 @@ class Broker(object):
             raise ValueError("[!] risk_pct cannot be zero.")
 
         return int(trading_balance * risk_pct / price)
-
-
-class BrokerException(HTTPError, Exception):
-    pass
-
-
-class BrokerValidationException(ValueError):
-    pass

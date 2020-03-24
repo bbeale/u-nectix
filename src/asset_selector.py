@@ -1,18 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from src.edgar_interface import EdgarInterface
-from util import time_from_timestamp, num_bars
 from py_trade_signal import TradeSignal
-import json
-import time
-
+# from src.broker import BrokerException
 # from src.finta_interface import Indicator as I, IndicatorException
 # from py_trade_signal.exception import TradeSignalException
+# from util import time_from_timestamp, num_bars
+# import json
+# import time
+
+
+class AssetException(Exception):
+    pass
+
+
+class AssetValidationException(ValueError):
+    pass
+
+
+class DataframeException(AssetException):
+    pass
 
 
 class AssetSelector:
 
-    def __init__(self, broker, cli_args, edgar_token=None, poolsize=5):
+    def __init__(self, broker, cli_args, edgar_token=None):
         """Initialize the asset selector with an optional edgar token
 
         TODO: Incorporate Twitter api and trade signals
@@ -25,6 +37,7 @@ class AssetSelector:
         https://api.stocktwits.com/developers/docs/api
 
         :param broker:
+        :param cli_args:
         :param edgar_token:
         """
         if not broker or broker is None:
@@ -53,8 +66,13 @@ class AssetSelector:
         else:
             self.min_stock_price = 5
 
-        if "short" in cli_args.mode or "long" in cli_args.mode:
+        if "bear" in cli_args.algorithm:
             self.shorts_wanted = True
+
+        if cli_args.poolsize is not None:
+            self.poolsize = cli_args.poolsize
+        else:
+            self.poolsize = 5
 
         self.broker = broker
 
@@ -62,7 +80,6 @@ class AssetSelector:
             self.edgar_token = edgar_token
             self.ei = EdgarInterface(self.edgar_token)
 
-        self.poolsize = poolsize
         self.algorithm = cli_args.algorithm
         self.tradeable_assets = None
         self.recent_filings = None
@@ -166,7 +183,7 @@ class AssetSelector:
 
         return direction
 
-    def bullish_volume_overnight_hold(self):
+    def bullish_overnight_momentum(self):
         """
         Given a list of assets, evaluate which ones are bullish and return a sample of each.
 
@@ -191,52 +208,18 @@ class AssetSelector:
             if close > self.max_stock_price or close < self.min_stock_price:
                 continue
 
+            # throw it away if the candlestick pattern is not bullish
             pattern = self.candle_pattern_direction(df)
             if pattern in ["bear", None]:
                 continue
 
-            if pattern is "bull":
-                # add the current symbol to the portfolio
-                self.portfolio.append(ass.symbol)
-                if len(self.portfolio) >= self.poolsize:
-                    # exit the filter process
-                    break
+            # assume the current symbol pattern is bullish and add to the portfolio
+            self.portfolio.append(ass.symbol)
+            if len(self.portfolio) >= self.poolsize:
+                # exit the filter process
+                break
 
-    def bullish_macd_overnight_hold(self):
-        """
-        Given a list of assets, evaluate which ones are bullish and return a sample of each.
-
-        These method names should correspond with files in the algos/ directory.
-        """
-        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
-            raise AssetValidationException("[!] Invalid pool size.")
-
-        self.portfolio = []
-
-        for ass in self.tradeable_assets:
-            """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
-            limit = 1000
-            df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
-
-            # guard clauses to make sure we have enough data to work with
-            if df is None or len(df) != limit:
-                continue
-
-            # throw it away if the price is out of our min-max range
-            close = df["close"].iloc[-1]
-            if close > self.max_stock_price or close < self.min_stock_price:
-                continue
-
-            # Look for buy signals
-            macd_signal = self.signaler.macd_signal.buy(df)
-            if macd_signal:
-                # add the current symbol to the portfolio
-                self.portfolio.append(ass.symbol)
-                if len(self.portfolio) >= self.poolsize:
-                    # exit the filter process
-                    break
-
-    def bearish_volume_overnight_hold(self):
+    def bearish_overnight_momentum(self):
         """
         Given a list of assets, evaluate which ones are bearish and return a sample of each.
         """
@@ -248,203 +231,242 @@ class AssetSelector:
         for ass in self.tradeable_assets:
             limit = 1000
             df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+
+            # guard clauses to make sure we have enough data to work with
             if df is None or len(df) != limit:
                 continue
 
+            # throw it away if the price is out of our min-max range
+            close = df["close"].iloc[-1]
+            if close > self.max_stock_price or close < self.min_stock_price:
+                continue
+
+            # throw it away if the candlestick pattern is not bearish
             pattern = self.candle_pattern_direction(df)
             if pattern in ["bull", None]:
                 continue
 
-            if pattern is "bear":
-                # add the current symbol to the portfolio
-                self.portfolio.append(ass.symbol)
-                if len(self.portfolio) >= self.poolsize:
-                    # exit the filter process
-                    break
-
-    def top_gainer_overnight_reversal(self):
-        """
-        Use Polygon endpoint to populate a watchlist of top "gainers".
-        """
-        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
-            raise AssetValidationException("[!] Invalid pool size.")
-
-        self.portfolio = []
-
-        gainers = self.broker.api.polygon.gainers_losers()
-        for symbol in range(len(gainers)):
-
-            ticker = gainers[symbol].ticker
-            ass = self.broker.get_asset(ticker)
-            if ass is not None and ass.tradable and ass.easy_to_borrow:
-
-                # TODO: look for reversal here
-
-                # add the current symbol to the portfolio
-                self.portfolio.append(ass.symbol)
-                if len(self.portfolio) >= self.poolsize:
-                    # exit the filter process
-                    break
-
-    def top_loser_overnight_reversal(self):
-        """
-        Use Polygon endpoint to populate a list of top "losers".
-        """
-        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
-            raise AssetValidationException("[!] Invalid pool size.")
-
-        self.portfolio = []
-
-        losers = self.broker.api.polygon.gainers_losers("losers")
-        for symbol in range(len(losers)):
-
-            ticker = losers[symbol].ticker
-            ass = self.broker.get_asset(ticker)
-            if ass is not None and ass.tradable and ass.easy_to_borrow:
-
-                # TODO: look for reversal here
-
-                # add the current symbol to the portfolio
-                self.portfolio.append(ass.symbol)
-                if len(self.portfolio) >= self.poolsize:
-                    # exit the filter process
-                    break
-
-    def undervalued_overnight_hold(self):
-        """
-            https://medium.com/datadriveninvestor/how-i-use-this-free-api-to-find-undervalued-stocks-6574b9a3f2fe
-
-                and
-
-            https://medium.com/automation-generation/trading-on-the-edge-how-this-free-api-helps-me-find-undervalued-stocks-7ec7b904ee37
-        """
-        raise NotImplementedError
-
-    def overvalued_overnight_hold(self):
-        raise NotImplementedError
-
-    """ Interacting with the EDGAR API. Not sure how I want to approach this yet because I haven't 
-        spent a ton of time here since those rate limit issues I was having. 
-
-        TODO figure out a solution now that my API account works again
-    """
-
-    def positive_sentiment_assets(self):
-        raise NotImplementedError
-
-    def negative_sentiment_assets(self):
-        raise NotImplementedError
-
-    def low_risk_assets(self):
-        raise NotImplementedError
-
-    def high_risk_assets(self):
-        raise NotImplementedError
-
-    def sec_filings(self, barcount=64, poolsize=5, form_type="8-K", backdate=None):
-        """Return tradeable asets with recent SEC filings.
-
-        :param barcount:
-        :param poolsize:
-        :param form_type:
-        :param backdate:
-        :return:
-
-
-
-
-        TODO: Move the code in these methods into callbaccks ^ mentioned above
-        """
-        if not self.edgar_token or self.edgar_token is None:
-            raise NotImplementedError
-
-        if not backdate or backdate is None:
-            # backdate = time_from_timestamp(time.time() - 604800, time_format="%Y-%m-%d")
-            # using a longer window only for debugging purposes -- just to make sure I have results quickly
-            backdate = time_from_timestamp(time.time() - (604800 * 26), time_format="%Y-%m-%d")
-
-        date = time_from_timestamp(time.time(), time_format="%Y-%m-%d")
-
-        # Filter the assets down to just those on NASDAQ.
-        active_assets = self.broker.get_assets()
-        assets = self._tradeable_assets(active_assets)
-
-        print("[-] Going through assets looking for firms with recent SEC filings")
-        for i in assets:
-
-            self.get_filings(i, backdate=backdate, date=date, form_type=form_type)
-
-            if len(self.recent_filings.keys()) >= poolsize:
+            # assume the current symbol pattern is bearish and add to the portfolio
+            self.portfolio.append(ass.symbol)
+            if len(self.portfolio) >= self.poolsize:
+                # exit the filter process
                 break
-            else:
-                continue
 
-        self.tradeable_assets_by_filings(barcount)
-
-        # return self.assets_by_filing
-
-        raise NotImplementedError("[!] SEC parsing needs to be reworked.")
-
-    def get_filings(self, asset, backdate, date, form_type="8-K"):
-        """Given a trading entity, get SEC filings in the date range.
-
-        :param asset:
-        :param backdate:
-        :param date:
-        :param form_type:
-        :return:
-        """
-        filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
-
-        # If none are found, lengthen the lookback window a couple times
-        if filings["total"] is 0:
-            print("[!] No recent filings found for {}. Looking back 2 weeks".format(asset.symbol))
-            backdate = time_from_timestamp(time.time() - (604800 * 2), time_format="%Y-%m-%d")
-            filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
-
-        if filings["total"] is 0:
-            print("[!] No filings found. Looking back 4 weeks")
-            backdate = time_from_timestamp(time.time() - (604800 * 4), time_format="%Y-%m-%d")
-            filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
-
-        if filings["total"] > 0:
-            print("[+] Added:", asset.symbol, " symbols:", len(self.recent_filings.keys()) + 1)
-            filings = json.dumps(filings)
-            self.recent_filings[asset.symbol] = filings
-
-        raise NotImplementedError("[!] SEC parsing needs to be reworked.")
-
-    def tradeable_assets_by_filings(self, barcount=64):
-        """Populate tradeable assets based on discovered SEC filings.
-
-        :return:
-        """
-        for i in self.recent_filings.keys():
-            # I think I need my original 13 week window here for consistency with get_assets_by_candlestick_pattern
-            backdate = time_from_timestamp(time.time() - (604800 * 13))
-
-            barset = self.broker.get_barset(i.symbol, "1D", backdate)
-
-            if num_bars(barset[i.symbol], barcount) is False:
-                continue
-
-            df = self.broker.extract_bar_data(barset, i.symbol)
-            self.assets_by_filing[i.symbol] = df
-
-        raise NotImplementedError("[!] SEC parsing needs to be reworked.")
-
-
-class AssetException(Exception):
-    pass
-
-
-class AssetValidationException(ValueError):
-    pass
-
-
-class CandlestickException(AssetException):
-    pass
-
-
-class DataframeException(AssetException):
-    pass
+    # def top_gainer_overnight_reversal(self):
+    #     """
+    #     Use Polygon endpoint to populate a watchlist of top "gainers".
+    #     """
+    #     if not self.poolsize or self.poolsize is None or self.poolsize is 0:
+    #         raise AssetValidationException("[!] Invalid pool size.")
+    #
+    #     self.portfolio = []
+    #
+    #     gainers = self.broker.api.polygon.gainers_losers()
+    #     for symbol in range(len(gainers)):
+    #
+    #         ticker = gainers[symbol].ticker
+    #         ass = self.broker.get_asset(ticker)
+    #         if ass is not None and ass.tradable and ass.easy_to_borrow:
+    #
+    #             # TODO: look for reversal here
+    #
+    #             # add the current symbol to the portfolio
+    #             self.portfolio.append(ass.symbol)
+    #             if len(self.portfolio) >= self.poolsize:
+    #                 # exit the filter process
+    #                 break
+    #
+    # def top_gainer_efficient_frontier(self):
+    #     """
+    #     Use Polygon endpoint to populate a watchlist of top "gainers".
+    #     """
+    #     if not self.poolsize or self.poolsize is None or self.poolsize is 0:
+    #         raise AssetValidationException("[!] Invalid pool size.")
+    #
+    #     tmp = []
+    #     self.portfolio = []
+    #
+    #     gainers = self.broker.api.polygon.gainers_losers()
+    #     for symbol in range(len(gainers)):
+    #         ticker = gainers[symbol].ticker
+    #         ass = self.broker.get_asset(ticker)
+    #
+    #         if ass is None:
+    #             continue
+    #
+    #         if ass.symbol in ["", None]:
+    #             continue
+    #
+    #         if ass is not None and ass.tradable:
+    #
+    #             limit = 1000
+    #             df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+    #             # guard clauses to make sure we have enough data to work with
+    #             if df is None or len(df) != limit:
+    #                 continue
+    #
+    #             # throw it away if the price is out of our min-max range
+    #             close = df["close"].iloc[-1]
+    #             if close > self.max_stock_price or close < self.min_stock_price:
+    #                 continue
+    #
+    #             tmp.append(ass.symbol)
+    #             # # add the current symbol to the portfolio
+    #             # self.portfolio.append(ass.symbol)
+    #             # if len(self.portfolio) >= self.poolsize:
+    #             #     # exit the filter process
+    #             #     break
+    #     df = self.broker.api.get_barset(symbols=",".join(tmp), timeframe="day", limit=1000)
+    #
+    #     for k, v in df.items():
+    #         df[k] = v.df["close"]
+    #
+    #     mean_return = expected_returns.mean_historical_return(df)
+    #     sample_cov_matrix = risk_models.sample_cov(df)
+    #     frontier = EfficientFrontier(mean_return, sample_cov_matrix)
+    #     self.portfolio = frontier.tickers
+    #     return frontier
+    #
+    # def top_loser_overnight_reversal(self):
+    #     """
+    #     Use Polygon endpoint to populate a list of top "losers".
+    #     """
+    #     if not self.poolsize or self.poolsize is None or self.poolsize is 0:
+    #         raise AssetValidationException("[!] Invalid pool size.")
+    #
+    #     self.portfolio = []
+    #
+    #     losers = self.broker.api.polygon.gainers_losers("losers")
+    #     for symbol in range(len(losers)):
+    #
+    #         ticker = losers[symbol].ticker
+    #         ass = self.broker.get_asset(ticker)
+    #         if ass is not None and ass.tradable and ass.easy_to_borrow:
+    #
+    #             # TODO: look for reversal here
+    #
+    #             # add the current symbol to the portfolio
+    #             self.portfolio.append(ass.symbol)
+    #             if len(self.portfolio) >= self.poolsize:
+    #                 # exit the filter process
+    #                 break
+    #
+    # def undervalued_overnight_hold(self):
+    #     """
+    #         https://medium.com/datadriveninvestor/how-i-use-this-free-api-to-find-undervalued-stocks-6574b9a3f2fe
+    #
+    #             and
+    #
+    #         https://medium.com/automation-generation/trading-on-the-edge-how-this-free-api-helps-me-find-undervalued-stocks-7ec7b904ee37
+    #     """
+    #     raise NotImplementedError
+    #
+    # def overvalued_overnight_hold(self):
+    #     raise NotImplementedError
+    #
+    # """ Interacting with the EDGAR API. Not sure how I want to approach this yet because I haven't
+    #     spent a ton of time here since those rate limit issues I was having.
+    #
+    #     TODO figure out a solution now that my API account works again
+    # """
+    #
+    # def positive_sentiment_assets(self):
+    #     raise NotImplementedError
+    #
+    # def negative_sentiment_assets(self):
+    #     raise NotImplementedError
+    #
+    # def low_risk_assets(self):
+    #     raise NotImplementedError
+    #
+    # def high_risk_assets(self):
+    #     raise NotImplementedError
+    #
+    # def sec_filings(self, barcount=64, poolsize=5, form_type="8-K", backdate=None):
+    #     """Return tradeable asets with recent SEC filings.
+    #
+    #     :param barcount:
+    #     :param poolsize:
+    #     :param form_type:
+    #     :param backdate:
+    #     :return:
+    #
+    #     TODO: Move the code in these methods into callbaccks ^ mentioned above
+    #     """
+    #     if not self.edgar_token or self.edgar_token is None:
+    #         raise NotImplementedError
+    #
+    #     if not backdate or backdate is None:
+    #         # backdate = time_from_timestamp(time.time() - 604800, time_format="%Y-%m-%d")
+    #         # using a longer window only for debugging purposes -- just to make sure I have results quickly
+    #         backdate = time_from_timestamp(time.time() - (604800 * 26), time_format="%Y-%m-%d")
+    #
+    #     date = time_from_timestamp(time.time(), time_format="%Y-%m-%d")
+    #
+    #     # Filter the assets down to just those on NASDAQ.
+    #     active_assets = self.broker.get_assets()
+    #     assets = self._tradeable_assets(active_assets)
+    #
+    #     print("[-] Going through assets looking for firms with recent SEC filings")
+    #     for i in assets:
+    #
+    #         self.get_filings(i, backdate=backdate, date=date, form_type=form_type)
+    #
+    #         if len(self.recent_filings.keys()) >= poolsize:
+    #             break
+    #         else:
+    #             continue
+    #
+    #     self.tradeable_assets_by_filings(barcount)
+    #
+    #     # return self.assets_by_filing
+    #
+    #     raise NotImplementedError("[!] SEC parsing needs to be reworked.")
+    #
+    # def get_filings(self, asset, backdate, date, form_type="8-K"):
+    #     """Given a trading entity, get SEC filings in the date range.
+    #
+    #     :param asset:
+    #     :param backdate:
+    #     :param date:
+    #     :param form_type:
+    #     :return:
+    #     """
+    #     filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
+    #
+    #     # If none are found, lengthen the lookback window a couple times
+    #     if filings["total"] is 0:
+    #         print("[!] No recent filings found for {}. Looking back 2 weeks".format(asset.symbol))
+    #         backdate = time_from_timestamp(time.time() - (604800 * 2), time_format="%Y-%m-%d")
+    #         filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
+    #
+    #     if filings["total"] is 0:
+    #         print("[!] No filings found. Looking back 4 weeks")
+    #         backdate = time_from_timestamp(time.time() - (604800 * 4), time_format="%Y-%m-%d")
+    #         filings = self.ei.get_sec_filings(asset.symbol, backdate, date, form_type=form_type)
+    #
+    #     if filings["total"] > 0:
+    #         print("[+] Added:", asset.symbol, " symbols:", len(self.recent_filings.keys()) + 1)
+    #         filings = json.dumps(filings)
+    #         self.recent_filings[asset.symbol] = filings
+    #
+    #     raise NotImplementedError("[!] SEC parsing needs to be reworked.")
+    #
+    # def tradeable_assets_by_filings(self, barcount=64):
+    #     """Populate tradeable assets based on discovered SEC filings.
+    #
+    #     :return:
+    #     """
+    #     for i in self.recent_filings.keys():
+    #         # I think I need my original 13 week window here for consistency with get_assets_by_candlestick_pattern
+    #         backdate = time_from_timestamp(time.time() - (604800 * 13))
+    #
+    #         barset = self.broker.get_barset(i.symbol, "1D", backdate)
+    #
+    #         if num_bars(barset[i.symbol], barcount) is False:
+    #             continue
+    #
+    #         df = self.broker.extract_bar_data(barset, i.symbol)
+    #         self.assets_by_filing[i.symbol] = df
+    #
+    #     raise NotImplementedError("[!] SEC parsing needs to be reworked.")
