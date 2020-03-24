@@ -165,7 +165,7 @@ def run(broker, args):
 
         for calendar in calendars:
             # see how much we got back by holding the last day's picks overnight
-            positions, asset_value = broker.calculate_total_asset_value(portfolio, calendar.date)
+            positions, asset_value = algorithm.total_asset_value(portfolio, calendar.date)
             cash += asset_value
             print("[*] Cash account value on {}: ${}".format(calendar.date.strftime("%Y-%m-%d"), round(cash, 2)),
                 "Risk amount: ${}".format(round(risk_amount, 2)))

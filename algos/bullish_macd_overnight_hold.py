@@ -111,6 +111,24 @@ class Algorithm(AssetSelector, BaseAlgo):
             print("[*] Ticker: {}, Shares: {}".format(k, v))
         return shares
 
+    def total_asset_value(self, positions, date):
+        """
+
+        :param positions:
+        :param date:
+        :return:
+        """
+        if len(positions.keys()) == 0:
+            return positions, 0,
+
+        total_value = 0
+        formatted_date = time_from_datetime(date)
+
+        barset = self.broker.api.get_barset(symbols=positions.keys(), timeframe='day', limit=1, end=formatted_date)
+        for symbol in positions:
+            total_value += positions[symbol] * barset[symbol][0].o
+        return positions, total_value,
+
 
 def run(broker, args):
 
@@ -160,7 +178,7 @@ def run(broker, args):
 
         for calendar in calendars:
             # see how much we got back by holding the last day's picks overnight
-            asset_value = broker.calculate_total_asset_value(portfolio, calendar.date)
+            positions, asset_value = algorithm.total_asset_value(portfolio, calendar.date)
             cash += asset_value
             print("[*] Cash account value on {}: ${}".format(calendar.date.strftime("%Y-%m-%d"), round(cash, 2)),
                 "Risk amount: ${}".format(round(risk_amount, 2)))
