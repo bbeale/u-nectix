@@ -14,5 +14,5 @@ class BaseAlgo:
     def get_ratings(self, algo_time=None, window_size=5):
         raise NotImplementedError
 
-    def portfolio_allocation(self, data, cash):
+    def portfolio_allocation(self, data, cash, risk):
         raise NotImplementedError
