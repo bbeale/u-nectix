@@ -16,7 +16,41 @@ class Algorithm(AssetSelector, BaseAlgo):
     def __init__(self, broker, cli_args):
         super().__init__(broker=broker, cli_args=cli_args, edgar_token=None)
 
-    """ Custom asset selection method previously from AssetSelector would go here."""
+    def bullish_overnight_momentum(self):
+        """
+        Given a list of assets, evaluate which ones are bullish and return a sample of each.
+
+        These method names should correspond with files in the algos/ directory.
+        """
+        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
+            raise AssetValidationException("[!] Invalid pool size.")
+
+        self.portfolio = []
+
+        for ass in self.tradeable_assets:
+            """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
+            limit = 1000
+            df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+
+            # guard clauses to make sure we have enough data to work with
+            if df is None or len(df) != limit:
+                continue
+
+            # throw it away if the price is out of our min-max range
+            close = df["close"].iloc[-1]
+            if close > self.max_stock_price or close < self.min_stock_price:
+                continue
+
+            # throw it away if the candlestick pattern is not bullish
+            pattern = self.candle_pattern_direction(df)
+            if pattern in ["bear", None]:
+                continue
+
+            # assume the current symbol pattern is bullish and add to the portfolio
+            self.portfolio.append(ass.symbol)
+            if len(self.portfolio) >= self.poolsize:
+                # exit the filter process
+                break
 
     def get_ratings(self, algo_time=None, window_size=5):
         """Calculate trade decision based on standard deviation of past volumes.
