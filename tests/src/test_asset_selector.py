@@ -30,7 +30,8 @@ class TestAssetSelector(TestCase):
     broker = Broker(alpaca)
     selector = AssetSelector(broker, cli_args=args)
 
-    def test_top_gainer_efficient_frontier(self):
-        result = self.selector.top_gainer_efficient_frontier()
-        self.assertIsNotNone(result)
-        print("...")
+    def test_candlestick_patterns(self):
+        pass
+
+    def test_candle_pattern_direction(self):
+        pass
