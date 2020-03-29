@@ -109,14 +109,6 @@ def run(broker, args):
         args.algorithm = "bullish_macd_overnight_hold"
     if args.testperiods is None:
         args.testperiods = 30
-    # if args.period is None:
-    #     args.period = "1D"
-    # if args.max is None:
-    #     args.max = 26
-    # if args.min is None:
-    #     args.min = 6
-    # if args.poolsize is None:
-    #     args.poolsize = 5
 
     if args.cash is not None and type(args.cash) == float:
         cash = args.cash
