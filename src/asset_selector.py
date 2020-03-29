@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from src.edgar_interface import EdgarInterface
+from alpaca_trade_api.stocktwits import REST as StockTwits
 from py_trade_signal import TradeSignal
 from pytz import timezone
 import pandas as pd
@@ -21,7 +22,7 @@ class DataframeException(AssetException):
 
 class AssetSelector:
 
-    def __init__(self, broker, cli_args, edgar_token=None):
+    def __init__(self, broker, cli_args, stocktwits_key=None, edgar_token=None):
         """Initialize the asset selector with an optional edgar token
 
         TODO: Incorporate Twitter api and trade signals
@@ -85,6 +86,8 @@ class AssetSelector:
 
         # initialize trade signal
         self.signaler = TradeSignal()
+
+        self.stocktwits = StockTwits(api_key=stocktwits_key)  # setting api key to None for now because I'm not using authenticated endpoints
 
         # init stage two:
         self.get_assets(self.asset_class, self.algorithm)
