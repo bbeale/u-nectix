@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 from src.edgar_interface import EdgarInterface
 from py_trade_signal import TradeSignal
+from pytz import timezone
+import pandas as pd
+import statistics
 
 
 class AssetException(Exception):
@@ -37,7 +40,7 @@ class AssetSelector:
         if not broker or broker is None:
             raise AssetValidationException("[!] A Broker instance is required.")
 
-        # JUST FOR NOW -- assume the presence of crypto OR forex arg means something truthy
+        # assume the presence of crypto or forex arg means that's what we're trading
         if cli_args.crypto is not None and cli_args.crypto:
             self.asset_class = "crypto"
         elif cli_args.forex is not None and cli_args.forex:
@@ -58,7 +61,7 @@ class AssetSelector:
         if cli_args.min is not None and type(cli_args.min) == int:
             self.min_stock_price = cli_args.min
         else:
-            self.min_stock_price = 5
+            self.min_stock_price = 0
 
         if "bear" in cli_args.algorithm:
             self.shorts_wanted = True
@@ -176,3 +179,71 @@ class AssetSelector:
             direction = "bear"
 
         return direction
+
+    def calculate_volume_ratings(self, symbols, algo_time, window_size=5):
+        """Calculate trade decision based on standard deviation of past volumes.
+
+        Per Medium article:
+            Rating = Number of volume standard deviations * momentum.
+
+        TODO: move to AssetSelector since it seems that we want assets with favorable volume ratings...
+
+        :param symbols:
+        :param algo_time:
+        :param window_size:
+        :return:
+        """
+        if not algo_time or algo_time is None:
+            raise ValueError("[!] Invalid algo_time.")
+
+        ratings = pd.DataFrame(columns=["symbol", "rating", "price"])
+        index = 0
+        window_size = window_size
+        formatted_time = None
+        if algo_time is not None:
+            # TODO: Consolidate these time usages
+            formatted_time = algo_time.date().strftime("%Y-%m-%dT%H:%M:%S.%f-04:00")
+
+        # symbols = self.portfolio
+
+        while index < len(symbols):
+            barset = self.broker.api.get_barset(
+                symbols=symbols,
+                timeframe="day",
+                limit=window_size,
+                end=formatted_time
+            )
+
+            for symbol in symbols:
+                bars = barset[symbol]
+                if len(bars) == window_size:
+                    # make sure we aren"t missing the most recent data.
+                    latest_bar = bars[-1].t.to_pydatetime().astimezone(
+                        timezone("EST")
+                    )
+                    gap_from_present = algo_time - latest_bar
+                    if gap_from_present.days > 1:
+                        continue
+
+                    price = bars[-1].c
+                    price_change = price - bars[0].c
+                    # calculate standard deviation of previous volumes
+                    past_volumes = [bar.v for bar in bars[:-1]]
+                    volume_stdev = statistics.stdev(past_volumes)
+                    if volume_stdev == 0:
+                        # data for the stock might be low quality.
+                        continue
+                    # compare it to the change in volume since yesterday.
+                    volume_change = bars[-1].v - bars[-2].v
+                    volume_factor = volume_change / volume_stdev
+                    rating = price_change/bars[0].c * volume_factor
+                    if rating > 0:
+                        ratings = ratings.append({
+                            "symbol": symbol,
+                            "rating": rating,
+                            "price": price
+                        }, ignore_index=True)
+            index += 200
+        ratings = ratings.sort_values("rating", ascending=False)
+        ratings = ratings.reset_index(drop=True)
+        return ratings
