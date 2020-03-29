@@ -62,13 +62,13 @@ class Algorithm(AssetSelector, BaseAlgo):
         shares = {}
         risk_amt = total_risk
         for _, row in data.iterrows():
-            # shares[row['symbol']] = int(float(row['rating']) / float(total_rating) * float(cash) / float(row['close']))
-            numshares = self.broker.calculate_position_size(row["close"], risk_amt)
+            # shares[row['symbol']] = int(float(row['rating']) / float(total_rating) * float(cash) / float(row['price']))
+            numshares = self.broker.calculate_position_size(row["price"], risk_amt)
             if numshares > 10:
                 multiplier = int(numshares / 10)
                 numshares = multiplier * 10
             shares[row["symbol"]] = numshares
-            risk_amt -= numshares * row["close"]
+            risk_amt -= numshares * row["price"]
         # debug
         for k, v in shares.items():
             print("[*] Ticker: {}, Shares: {}".format(k, v))
@@ -172,7 +172,7 @@ def run(broker, args):
             for _, row in ratings.iterrows():
                 # "Buy" our shares on that day and subtract the cost.
                 shares_to_buy = int(portfolio[row['symbol']])
-                cost = row['close'] * shares_to_buy
+                cost = row['price'] * shares_to_buy
                 cash -= cost
 
                 # calculate the amount we want to risk on the next trade
