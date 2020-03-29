@@ -166,8 +166,8 @@ def run(broker, args):
                 break
 
             # calculate MACD based ratings for a particular day
-            ratings = algorithm.get_ratings(symbols, timezone('EST').localize(calendar.date), window_size=10)
-            portfolio = algorithm.portfolio_allocation(ratings, cash, risk_amount)
+            ratings = algorithm.calculate_volume_ratings(symbols, timezone('EST').localize(calendar.date), window_size=10)
+            portfolio = algorithm.portfolio_allocation(ratings, risk_amount)
 
             for _, row in ratings.iterrows():
                 # "Buy" our shares on that day and subtract the cost.
