@@ -51,61 +51,24 @@ class Algorithm(AssetSelector, BaseAlgo):
                     # exit the filter process
                     break
 
-    def get_ratings(self, algo_time=None, window_size=5):
-        """Calculate trade decision based on MACD values.
-
-        :param algo_time:
-        :param window_size:
-        :return:
-        """
-        if not algo_time or algo_time is None:
-            raise ValueError("[!] Invalid algo_time.")
-
-        ratings = pd.DataFrame(columns=['symbol', 'rating', 'close', 'macd', 'signal'])
-        index = 0
-        window_size = window_size
-        formatted_time = None
-        if algo_time is not None:
-            formatted_time = algo_time.date().strftime('%Y-%m-%dT%H:%M:%S.%f-04:00')
-
-        symbols = self.portfolio
-
-        while index < len(symbols):
-            barset = self.broker.api.get_barset(symbols=symbols, timeframe='day', limit=window_size, end=formatted_time)
-
-            for symbol in symbols:
-                bars = barset[symbol]
-                if len(bars) == window_size:
-                    latest_bar = bars[-1].t.to_pydatetime().astimezone(timezone('EST'))
-                    gap_from_present = algo_time - latest_bar
-                    if gap_from_present.days > 1:
-                        continue
-
-                    price = bars[-1].c
-                    macd = TA.MACD(bars.df)
-                    current_macd = macd["MACD"].iloc[-1]
-                    current_signal = macd["SIGNAL"].iloc[-1]
-                    signal_divergence = current_macd - current_signal
-
-                    if signal_divergence < 0 and current_macd < 0:
-                        ratings = ratings.append(
-                            {'symbol': symbol, 'rating': signal_divergence, 'close': price, 'macd': current_macd,
-                                'signal': current_signal}, ignore_index=True)
-            index += 200
-        ratings = ratings.sort_values('rating', ascending=False)
-        return ratings.reset_index(drop=True)
-
-    def portfolio_allocation(self, data, cash):
+    def portfolio_allocation(self, data, total_risk):
         """Calculate portfolio allocation size given a ratings dataframe and a cash amount.
 
         :param data:
-        :param cash:
+        :param total_risk:
         :return:
         """
-        total_rating = data['rating'].sum()
+        # total_rating = data['rating'].sum()
         shares = {}
+        risk_amt = total_risk
         for _, row in data.iterrows():
-            shares[row['symbol']] = int(float(row['rating']) / float(total_rating) * float(cash) / float(row['close']))
+            # shares[row['symbol']] = int(float(row['rating']) / float(total_rating) * float(cash) / float(row['close']))
+            numshares = self.broker.calculate_position_size(row["close"], risk_amt)
+            if numshares > 10:
+                multiplier = int(numshares / 10)
+                numshares = multiplier * 10
+            shares[row["symbol"]] = numshares
+            risk_amt -= numshares * row["close"]
         # debug
         for k, v in shares.items():
             print("[*] Ticker: {}, Shares: {}".format(k, v))
@@ -126,7 +89,12 @@ class Algorithm(AssetSelector, BaseAlgo):
 
         barset = self.broker.api.get_barset(symbols=positions.keys(), timeframe='day', limit=1, end=formatted_date)
         for symbol in positions:
-            total_value += positions[symbol] * barset[symbol][0].o
+            # price action since the last bar
+            close = barset[symbol][0].c
+            open = barset[symbol][-1].o
+            change = float(open - close)
+            positions[symbol] = {"shares": positions[symbol], "value": positions[symbol] * open, "change": change}
+            total_value += positions[symbol]["value"]
         return positions, total_value,
 
 
@@ -137,18 +105,18 @@ def run(broker, args):
     else:
         broker = broker
 
-    if args.period is None:
-        args.period = "1D"
     if args.algorithm is None:
         args.algorithm = "bullish_macd_overnight_hold"
     if args.testperiods is None:
         args.testperiods = 30
-    if args.max is None:
-        args.max = 26
-    if args.min is None:
-        args.min = 6
-    if args.poolsize is None:
-        args.poolsize = 5
+    # if args.period is None:
+    #     args.period = "1D"
+    # if args.max is None:
+    #     args.max = 26
+    # if args.min is None:
+    #     args.min = 6
+    # if args.poolsize is None:
+    #     args.poolsize = 5
 
     if args.cash is not None and type(args.cash) == float:
         cash = args.cash
@@ -183,19 +151,23 @@ def run(broker, args):
             print("[*] Cash account value on {}: ${}".format(calendar.date.strftime("%Y-%m-%d"), round(cash, 2)),
                 "Risk amount: ${}".format(round(risk_amount, 2)))
 
+            if cash <= 0:
+                print("[!] Account has gone to $0.")
+                break
+
             if cal_index == len(calendars) - 1:
                 print("[*] End of the backtesting window.")
                 print("[*] Starting account value: {}".format(starting_amount))
                 print("[*] Holdings: ")
                 for k, v in portfolio.items():
-                    print(" - Symbol: {}, Shares: {}".format(k, str(round(v, 2))))
+                    print(" - Symbol: {}, Shares: {}, Value: {}".format(k, v["shares"], v["value"]))
                 print("[*] Account value: {}".format(round(cash, 2)))
                 print("[*] Change from starting value: ${}". format(round(float(cash) - float(starting_amount), 2)))
                 break
 
             # calculate MACD based ratings for a particular day
-            ratings = algorithm.get_ratings(timezone('EST').localize(calendar.date), window_size=10)
-            portfolio = algorithm.portfolio_allocation(ratings, risk_amount)
+            ratings = algorithm.get_ratings(symbols, timezone('EST').localize(calendar.date), window_size=10)
+            portfolio = algorithm.portfolio_allocation(ratings, cash, risk_amount)
 
             for _, row in ratings.iterrows():
                 # "Buy" our shares on that day and subtract the cost.
