@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from src.edgar_interface import EdgarInterface
+from alpaca_trade_api.stocktwits import REST
 from py_trade_signal import TradeSignal
 
 
@@ -84,7 +85,7 @@ class AssetSelector:
         self.signaler = TradeSignal()
 
         # setting api key to None for now because I'm not using authenticated endpoints
-        self.stocktwits = None
+        self.stocktwits = REST(api_key=None)
 
         # init stage two:
         self.get_assets(self.asset_class, self.algorithm)
