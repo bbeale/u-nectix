@@ -46,6 +46,10 @@ class Algorithm(AssetSelector, BaseAlgo):
             if pattern in ["bear", None]:
                 continue
 
+            mfi_signal = self.signaler.mfi_signal.buy(df)
+            if not mfi_signal:
+                continue
+
             # assume the current symbol pattern is bullish and add to the portfolio
             self.portfolio.append(ass.symbol)
             if len(self.portfolio) >= self.poolsize:
