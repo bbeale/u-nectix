@@ -97,6 +97,50 @@ class Algorithm(AssetSelector, BaseAlgo):
             total_value += positions[symbol]["value"]
         return positions, total_value,
 
+    def get_ratings(self, algo_time=None, window_size=5):
+        """Calculate trade decision based on MACD values.
+
+        :param algo_time:
+        :param window_size:
+        :return:
+        """
+        if not algo_time or algo_time is None:
+            raise ValueError("[!] Invalid algo_time.")
+
+        ratings = pd.DataFrame(columns=['symbol', 'rating', "price", 'macd', 'signal'])
+        index = 0
+        window_size = window_size
+        formatted_time = None
+        if algo_time is not None:
+            formatted_time = algo_time.date().strftime('%Y-%m-%dT%H:%M:%S.%f-04:00')
+
+        symbols = self.portfolio
+
+        while index < len(symbols):
+            barset = self.broker.api.get_barset(symbols=symbols, timeframe='day', limit=window_size, end=formatted_time)
+
+            for symbol in symbols:
+                bars = barset[symbol]
+                if len(bars) == window_size:
+                    latest_bar = bars[-1].t.to_pydatetime().astimezone(timezone('EST'))
+                    gap_from_present = algo_time - latest_bar
+                    if gap_from_present.days > 1:
+                        continue
+
+                    price = bars[-1].c
+                    macd = TA.MACD(bars.df)
+                    current_macd = macd["MACD"].iloc[-1]
+                    current_signal = macd["SIGNAL"].iloc[-1]
+                    signal_divergence = current_macd - current_signal
+
+                    if signal_divergence < 0 and current_macd < 0:
+                        ratings = ratings.append(
+                            {'symbol': symbol, 'rating': signal_divergence, "price": price, 'macd': current_macd,
+                                'signal': current_signal}, ignore_index=True)
+            index += 200
+        ratings = ratings.sort_values('rating', ascending=True)
+        return ratings.reset_index(drop=True)
+
 
 def run(broker, args):
 
@@ -158,7 +202,7 @@ def run(broker, args):
                 break
 
             # calculate MACD based ratings for a particular day
-            ratings = algorithm.calculate_volume_ratings(symbols, timezone('EST').localize(calendar.date), window_size=10)
+            ratings = algorithm.get_ratings(timezone('EST').localize(calendar.date), window_size=10)
             portfolio = algorithm.portfolio_allocation(ratings, risk_amount)
 
             for _, row in ratings.iterrows():
