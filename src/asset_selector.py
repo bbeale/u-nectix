@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from src.sentiment_analysis import SentimentAnalysis, SentimentAnalysisException
 from src.edgar_interface import EdgarInterface
 from alpaca_trade_api.stocktwits import REST
 from py_trade_signal import TradeSignal
@@ -31,6 +32,7 @@ class AssetSelector:
         TODO: Stocktwits!
         https://api.stocktwits.com/developers/docs/api
 
+        https://pythondata.com/stationary-data-tests-for-time-series-forecasting/
         :param broker:
         :param cli_args:
         :param edgar_token:
@@ -86,6 +88,8 @@ class AssetSelector:
 
         # setting api key to None for now because I'm not using authenticated endpoints
         self.stocktwits = REST(api_key=None)
+
+        self.sentiment_analyzer = SentimentAnalysis()
 
         # init stage two:
         self.get_assets(self.asset_class, self.algorithm)
