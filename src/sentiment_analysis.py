@@ -9,13 +9,15 @@ class SentimentAnalysisException(Exception):
 
 class SentimentAnalysis:
 
-    def __init__(self, dataframe, texts):
+    def __init__(self, dataframe=None, texts=None):
 
         nltk.download('vader_lexicon')
+        if dataframe is not None:
+            self.dataframe = dataframe
+        if texts is not None:
+            self.texts = texts
 
-        self.sid        = SentimentIntensityAnalyzer()
-        self.dataframe  = dataframe
-        self.texts      = texts
+        self.sid = SentimentIntensityAnalyzer()
         self.sentiments = dict()
 
     def get_sentiments(self):
