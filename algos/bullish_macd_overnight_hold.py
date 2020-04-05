@@ -16,12 +16,18 @@ class Algorithm(AssetSelector, BaseAlgo):
         super().__init__(broker=broker, cli_args=cli_args, edgar_token=None)
 
     """ Custom asset selection method goes here."""
-    def bullish_macd_overnight_hold(self):
+    def bullish_macd_overnight_hold(self, backtest=False, bt_offset=None):
         """
         Given a list of assets, evaluate which ones are bullish and return a sample of each.
 
         These method names should correspond with files in the algos/ directory.
         """
+        if backtest:
+            if not bt_offset or bt_offset is None:
+                raise AssetValidationException("[!] Must specify a number of periods to offset if backtesting.")
+            limit = bt_offset
+        else:
+            limit = 1000
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
             raise AssetValidationException("[!] Invalid pool size.")
 
@@ -29,7 +35,6 @@ class Algorithm(AssetSelector, BaseAlgo):
 
         for ass in self.tradeable_assets:
             """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
-            limit = 1000
             df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
 
             # guard clauses to make sure we have enough data to work with

@@ -40,6 +40,12 @@ class AssetSelector:
         if not broker or broker is None:
             raise AssetValidationException("[!] A Broker instance is required.")
 
+        if cli_args.backtest is not None:
+            self.backtesting = True
+            self.offset = cli_args.testperiods
+        else:
+            self.backtesting = False
+
         # assume the presence of crypto or forex arg means that's what we're trading
         if cli_args.crypto is not None and cli_args.crypto:
             self.asset_class = "crypto"
@@ -132,7 +138,11 @@ class AssetSelector:
 
         # populate our portfolio based on our trading algorithm
         selection_method = getattr(self, algorithm)
-        selection_method()
+
+        if self.backtesting:
+            selection_method(self.backtesting, self.offset)
+        else:
+            selection_method()
 
     @staticmethod
     def _candlestick_patterns(c1, c2, c3):

@@ -415,13 +415,13 @@ class Broker(object):
         else:
             return result
 
-    def get_barset_df(self, symbol, period, limit=50, backdate=None):
+    def get_barset_df(self, symbol, period, limit=50, until=None):
         """Get a set of bars from the API given a symbol, a time period and a starting time.
 
         :param symbol:
         :param period:
         :param limit:
-        :param backdate:
+        :param until:
         :return:
         """
         if not symbol or symbol is None:
@@ -431,7 +431,7 @@ class Broker(object):
             raise BrokerValidationException("[!] Must present a valid period type.")
 
         result = None
-        if backdate is None:
+        if until is None:
             try:
                 result = self.api.get_barset(symbol, period, limit=limit)
             except BrokerException:
@@ -443,15 +443,15 @@ class Broker(object):
                     print("[!] Unable to get barset or barset is None.")
         else:
             try:
-                result = self.api.get_barset(symbol, period, limit=limit,  after=backdate)
+                result = self.api.get_barset(symbol, period, until=until)
             except BrokerException:
                 print("[!] Unable to get barset for {}. Retrying in 3s...".format(symbol))
                 time.sleep(3)
                 try:
-                    result = self.api.get_barset(symbol, period, limit=limit, after=backdate)
+                    result = self.api.get_barset(symbol, period, until=until)
                 except BrokerException:
                     print("[!] Unable to get barset or barset is None.")
-        if len(result[symbol]) != limit:
+        if len(result[symbol]) == 0:
             return None
         else:
             return self._bar_df(result[symbol])

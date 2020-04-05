@@ -17,7 +17,14 @@ class Algorithm(AssetSelector, BaseAlgo):
         super().__init__(broker=broker, cli_args=cli_args, edgar_token=None)
         # self.stocktwits = REST(api_key=stocktwits_key)  # setting api key to None for now because I'm not using authenticated endpoints
 
-    def bullish_sentiment(self):
+    def bullish_sentiment(self, backtest=False, bt_offset=None):
+        if backtest:
+            if not bt_offset or bt_offset is None:
+                raise AssetValidationException("[!] Must specify a number of periods to offset if backtesting.")
+            limit = bt_offset
+        else:
+            limit = 1000
+
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
             raise AssetValidationException("[!] Invalid pool size.")
 
@@ -32,7 +39,6 @@ class Algorithm(AssetSelector, BaseAlgo):
             if ass is None or not ass.tradable or not ass.easy_to_borrow:
                 continue
 
-            limit = 1000
             df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
             # df = self.broker.api.get_barset(ass.symbol, self.period, limit=1000).df
             # print(dir(df))
