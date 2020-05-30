@@ -17,22 +17,22 @@ class EdgarInterface:
     def __init__(self, edgar_token, dataframe=None):
 
         if not edgar_token or edgar_token is None:
-            raise ValueError("[!] Edgar token required for API access")
+            raise ValueError('[!] Edgar token required for API access')
 
-        self.base_url       = "https://api.sec-api.io"
+        self.base_url       = 'https://api.sec-api.io'
         self.token          = edgar_token
-        self.api            = "{}?token={}".format(self.base_url, self.token)
+        self.api            = '{}?token={}'.format(self.base_url, self.token)
         self.dataframe      = dataframe
         self.edgar_scores   = dict()
 
     def get_edgar_signals(self):
         """Loop through tickers and append EDGAR signals to that ticker's dataframe"""
         if not self.dataframe or self.dataframe is None:
-            raise NotImplementedError("[!] Dataframe should only be none if AssetSelector is using it")
+            raise NotImplementedError('[!] Dataframe should only be none if AssetSelector is using it')
 
         for ticker in self.dataframe.keys():
-            fdate = self.dataframe[ticker]["time"].iloc[-7].strftime("%Y-%m-%d")
-            tdate = time_from_timestamp(time.time(), time_format="%Y-%m-%d")
+            fdate = self.dataframe[ticker]['time'].iloc[-7].strftime('%Y-%m-%d')
+            tdate = time_from_timestamp(time.time(), time_format='%Y-%m-%d')
             self.edgar_scores[ticker] = self.calculate_edgar_signal(ticker, fdate, tdate)
         return self.edgar_scores
 
@@ -48,36 +48,36 @@ class EdgarInterface:
         :return:
         """
         if not ticker or ticker is None:
-            raise ValueError("[!] Invalid ticker")
+            raise ValueError('[!] Invalid ticker')
 
         if not from_date or from_date is None:
-            raise ValueError("[!] From date required")
+            raise ValueError('[!] From date required')
 
         if not to_date or to_date is None:
-            raise ValueError("[!] To date required")
+            raise ValueError('[!] To date required')
 
         if not form_type or form_type is None:
-            form_type = "8-K"       # Default to 8-K if None
+            form_type = '8-K'       # Default to 8-K if None
 
         # construct the filter
-        filter_8k = "ticker:\"%s\" AND formType:\"%s\" AND filedAt:{%s TO %s}" % (ticker, form_type, from_date, to_date)
-        sort = [{"filedAt": {"order": "desc"}}]
+        filter_8k = 'ticker:\'%s\' AND formType:\'%s\' AND filedAt:{%s TO %s}' % (ticker, form_type, from_date, to_date)
+        sort = [{'filedAt': {'order': 'desc'}}]
         payload = {
-            "query": {"query_string": {"query": filter_8k}},
-            "from": start,
-            "size": size,
-            "sort": sort
+            'query': {'query_string': {'query': filter_8k}},
+            'from': start,
+            'size': size,
+            'sort': sort
         }
         resp = None
         try:
-            resp = requests.post(self.api, json.dumps(payload), headers={"Content-Type": "application/json; charset=utf-8"}).json()
+            resp = requests.post(self.api, json.dumps(payload), headers={'Content-Type': 'application/json; charset=utf-8'}).json()
         except requests.HTTPError as httpe:
-            print(httpe, "- Unable to submit API request. Retrying...")
+            print(httpe, '- Unable to submit API request. Retrying...')
             time.sleep(3)
             try:
-                resp = requests.post(self.api, json.dumps(payload), headers={"Content-Type": "application/json; charset=utf-8"}).json()
+                resp = requests.post(self.api, json.dumps(payload), headers={'Content-Type': 'application/json; charset=utf-8'}).json()
             except requests.HTTPError as httpe:
-                print(httpe, "- Unable to submit API request.")
+                print(httpe, '- Unable to submit API request.')
         finally:
             return resp
 
@@ -92,45 +92,45 @@ class EdgarInterface:
         :return:
         """
         if not ticker or ticker is None:
-            raise ValueError("[!] Invalid ticker")
+            raise ValueError('[!] Invalid ticker')
 
         if not from_date or from_date is None:
-            raise ValueError("[!] From date required")
+            raise ValueError('[!] From date required')
 
         if not to_date or to_date is None:
-            raise ValueError("[!] To date required")
+            raise ValueError('[!] To date required')
 
         resp = self.get_sec_filings(ticker, from_date, to_date).text
         r_dict = json.loads(resp)
 
-        if r_dict["total"] is 0:
+        if r_dict['total'] is 0:
             return None
 
         signal = None
         total_traded = 0
 
-        for item in r_dict["filings"]:
-            xml = download_xml(item["linkToTxt"])
+        for item in r_dict['filings']:
+            xml = download_xml(item['linkToTxt'])
             amount = calculate_transaction_amount(xml)
             total_traded += amount
 
             initial, post, percenttraded, majorshareholder = calculate_8k_transaction_amount(xml)
-            print("# pre:\t\t{}\t\t# post:\t\t{}\t\t% traded:\t\t{}".format(initial, post, percenttraded))
+            print('# pre:\t\t{}\t\t# post:\t\t{}\t\t% traded:\t\t{}'.format(initial, post, percenttraded))
 
             if majorshareholder and initial > post:
-                signal = "STRONGBEAR"
+                signal = 'STRONGBEAR'
 
             elif not majorshareholder and initial > post:
-                signal = "BEAR"
+                signal = 'BEAR'
 
             elif majorshareholder and post > initial:
-                signal = "STRONGBULL"
+                signal = 'STRONGBULL'
 
             elif not majorshareholder and initial > post:
-                signal = "BULL"
+                signal = 'BULL'
 
             else:
-                print("[!] Unable to generate signal from SEC filings")
+                print('[!] Unable to generate signal from SEC filings')
                 continue
 
         return signal

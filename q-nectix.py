@@ -31,16 +31,16 @@ from datetime import date
 
 # tf.__version__
 
-# csv_file = "drive/My Drive/Colab Notebooks/IPI_data_1575436411.0203404.csv"
+# csv_file = 'drive/My Drive/Colab Notebooks/IPI_data_1575436411.0203404.csv'
 
 weeks = 54*2
-ticker = "IPI"
+ticker = 'IPI'
 config = configparser.ConfigParser()
 
 try:
-    config.read(os.path.relpath("drive/My Drive/Colab Notebooks/config.ini"))
+    config.read(os.path.relpath('drive/My Drive/Colab Notebooks/config.ini'))
 except FileExistsError as e:
-    print("FileExistsError: {}".format(e))
+    print('FileExistsError: {}'.format(e))
     sys.exit(1)
 
 def time_formatter(time_stamp, time_format=None):
@@ -52,7 +52,7 @@ def time_formatter(time_stamp, time_format=None):
     if not time_stamp or time_stamp is None or type(time_stamp) is not float:
         raise ValueError
     if time_format is None:
-        time_format = "%Y-%m-%dT09:30:00-04:00"
+        time_format = '%Y-%m-%dT09:30:00-04:00'
     return date.fromtimestamp(time_stamp).strftime(time_format)
 
 def set_candlestick_df(bars):
@@ -63,30 +63,30 @@ def set_candlestick_df(bars):
     :return:
     """
     if not bars or bars is None:
-        raise ValueError("Bars cannot be none")
+        raise ValueError('Bars cannot be none')
 
     idx = [bar.t for bar in bars if bar is not None]
 
     data            = pd.DataFrame(index=idx)
-    data["open"]    = [bar.o for bar in bars if bar is not None]
-    data["high"]    = [bar.h for bar in bars if bar is not None]
-    data["low"]     = [bar.l for bar in bars if bar is not None]
-    data["close"]   = [bar.c for bar in bars if bar is not None]
-    data["volume"]  = [bar.v for bar in bars if bar is not None]
+    data['open']    = [bar.o for bar in bars if bar is not None]
+    data['high']    = [bar.h for bar in bars if bar is not None]
+    data['low']     = [bar.l for bar in bars if bar is not None]
+    data['close']   = [bar.c for bar in bars if bar is not None]
+    data['volume']  = [bar.v for bar in bars if bar is not None]
 
     return data
 
 def get_bars(ticker, backdate, config):
   """Get bars from Alpaca API."""
   alpaca_api = tradeapi.REST(
-      base_url    = config["alpaca"]["APCA_API_BASE_URL"],
-      key_id      = config["alpaca"]["APCA_API_KEY_ID"],
-      secret_key  = config["alpaca"]["APCA_API_SECRET_KEY"],
-      api_version = config["alpaca"]["VERSION"]
+      base_url    = config['alpaca']['APCA_API_BASE_URL'],
+      key_id      = config['alpaca']['APCA_API_KEY_ID'],
+      secret_key  = config['alpaca']['APCA_API_SECRET_KEY'],
+      api_version = config['alpaca']['VERSION']
   )
   trading_account = alpaca_api.get_account()
 
-  return alpaca_api.get_barset(ticker, "1D", after=backdate)
+  return alpaca_api.get_barset(ticker, '1D', after=backdate)
 
 # bars = get_bars(ticker, weeks, config)[ticker]
 # data = set_candlestick_df(bars)
@@ -105,9 +105,9 @@ def price_format(num):
     :return: formatted stock price
     """
     if num < 0:
-        return "- ${0:2f}".format(abs(num))
+        return '- ${0:2f}'.format(abs(num))
     else:
-        return "${0:2f}".format(abs(num))
+        return '${0:2f}'.format(abs(num))
 
 def load_dataset(ticker, start_date):
     """Load the dataset for a given ticker symbol.
@@ -117,10 +117,10 @@ def load_dataset(ticker, start_date):
     :return close: return the most recent closing price in the time series
     """
 
-    dataset = data_reader.DataReader(ticker, data_source="yahoo")
+    dataset = data_reader.DataReader(ticker, data_source='yahoo')
     start_date = str(dataset.index[0]).split()[0]
     end_date = str(dataset.index[-1]).split()[0]
-    close = dataset["Close"]
+    close = dataset['Close']
     return close
 
 def create_state(data, step, window_size):
@@ -145,7 +145,7 @@ def create_state(data, step, window_size):
 
 class Qtrader():
 
-    def __init__(self, state_size, action_space=3, model_name="Qtrader"):
+    def __init__(self, state_size, action_space=3, model_name='Qtrader'):
         """Initialize the AI trader class.
 
         :param state_size:
@@ -180,19 +180,19 @@ class Qtrader():
         model = tf.keras.models.Sequential()
 
         # first dense layer
-        model.add(tf.keras.layers.Dense(units=32, activation="relu", input_dim=self.state_size))
+        model.add(tf.keras.layers.Dense(units=32, activation='relu', input_dim=self.state_size))
 
         # second layer
-        model.add(tf.keras.layers.Dense(units=64, activation="relu"))
+        model.add(tf.keras.layers.Dense(units=64, activation='relu'))
 
         # third layer
-        model.add(tf.keras.layers.Dense(units=128, activation="relu"))
+        model.add(tf.keras.layers.Dense(units=128, activation='relu'))
 
         # output layer
-        model.add(tf.keras.layers.Dense(units=self.action_space, activation="linear"))
+        model.add(tf.keras.layers.Dense(units=self.action_space, activation='linear'))
 
         # compile the model
-        model.compile(loss="mse", optimizer=tf.keras.optimizers.Adam(lr=0.001))
+        model.compile(loss='mse', optimizer=tf.keras.optimizers.Adam(lr=0.001))
 
         return model
 
@@ -245,12 +245,12 @@ class Qtrader():
             self.epsilon *= self.epsilon_decay
 
 
-backdate = time_formatter(time.time() - (604800 * weeks), "%Y-%m-%d")
+backdate = time_formatter(time.time() - (604800 * weeks), '%Y-%m-%d')
 data = load_dataset(ticker, backdate)   # .iloc[-100:]
 # data = pd.read_csv(csv_file)
 # for key in data.keys():
-#   if key != "close":
-#     print("Popping key:", key)
+#   if key != 'close':
+#     print('Popping key:', key)
 #     data.pop(key)
 data.head(50)
 
@@ -268,7 +268,7 @@ trader.model.summary()
 def run():
     # do the thang
     for episode in range(episodes + 1):
-        print("Episode\t {}/{}".format(episode, episodes))
+        print('Episode\t {}/{}'.format(episode, episodes))
         state = create_state(data, 0, window_size+1)
         total_profit = 0
         trader.inventory = []
@@ -294,12 +294,12 @@ def run():
             state = next_state
 
             if done:
-                print("Total profit:\t".ljust(10), str(total_profit))
+                print('Total profit:\t'.ljust(10), str(total_profit))
 
             if len(trader.memory) > batch_size:
                 trader.batch_trade(batch_size)
         if episode %10 == 0:
-            trader.model.save("Qtrader_{}.h5".format(episode))
+            trader.model.save('Qtrader_{}.h5'.format(episode))
 
 
 run()

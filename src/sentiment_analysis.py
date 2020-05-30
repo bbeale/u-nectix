@@ -37,12 +37,12 @@ class SentimentAnalysis:
         try:
             text_polarity = sid.polarity_scores(text)
         except SentimentAnalysisException:
-            raise SentimentAnalysisException("[!] Unable to calculate polarity scores for this text element.")
+            raise SentimentAnalysisException('[!] Unable to calculate polarity scores for this text element.')
         else:
-            if text_polarity["compound"] > 0:
-                sentiment   = "positive"
+            if text_polarity['compound'] > 0:
+                sentiment   = 'positive'
 
             else:
-                sentiment   = "negative"
+                sentiment   = 'negative'
 
             return sentiment

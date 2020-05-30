@@ -22,7 +22,7 @@ def time_from_timestamp(time_stamp, time_format=None):
     if not time_stamp or time_stamp is None or type(time_stamp) is not float:
         raise ValueError
     if time_format is None:
-        time_format = "%Y-%m-%dT09:30:00-04:00"
+        time_format = '%Y-%m-%dT09:30:00-04:00'
     return date.fromtimestamp(time_stamp).strftime(time_format)
 
 
@@ -141,30 +141,30 @@ def df2csv(dataframe, ticker):
     :return:
     """
     if dataframe is None:
-        raise EmptyDataError("Dataframe cannot be empty.")
+        raise EmptyDataError('Dataframe cannot be empty.')
     if not ticker or ticker is None:
-        raise ValueError("[!] Invalid ticker value.")
+        raise ValueError('[!] Invalid ticker value.')
 
-    datafile = os.path.relpath("data/{}_data_{}.csv".format(ticker, time.time()))
+    datafile = os.path.relpath('data/{}_data_{}.csv'.format(ticker, time.time()))
 
     try:
         dataframe.to_csv(datafile, index=False)
     except FileNotFoundError:
-        print("[?] Retrying one directory level up.")
-        datafile = os.path.relpath("../data/{}_data_{}.csv".format(ticker, time.time()))
+        print('[?] Retrying one directory level up.')
+        datafile = os.path.relpath('../data/{}_data_{}.csv'.format(ticker, time.time()))
         try:
             dataframe.to_csv(datafile, index=False)
         except FileNotFoundError:
-            raise FileNotFoundError("[!] Unable to save dataframe to CSV file.")
+            raise FileNotFoundError('[!] Unable to save dataframe to CSV file.')
     finally:
-        print("[+] File saved:\t{}".format(datafile))
+        print('[+] File saved:\t{}'.format(datafile))
 
 
 def parse_configs(path=None):
     parser = configparser.ConfigParser()
     if path is None:
         try:
-            parser.read(os.path.relpath("config.ini"))
+            parser.read(os.path.relpath('config.ini'))
         except FileExistsError as error:
             raise error
         else:
@@ -180,48 +180,48 @@ def parse_configs(path=None):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--algorithm",
+    parser.add_argument('-a', '--algorithm',
         type=str,
         required=False,
-        help="The algorithm we want to trade with -- must be a valid file in the algos directory")
-    parser.add_argument("-b", "--backtest",
+        help='The algorithm we want to trade with -- must be a valid file in the algos directory')
+    parser.add_argument('-b', '--backtest',
         required=False,
-        action="store_true",
-        help="Run in backtest mode if true, otherwise run in live mode")
-    parser.add_argument("-c", "--crypto",
+        action='store_true',
+        help='Run in backtest mode if true, otherwise run in live mode')
+    parser.add_argument('-c', '--crypto',
         required=False,
-        action="store_true",
-        help="If true, trade cryptocurrency instead of stocks using the Kraken exchange.")
-    parser.add_argument("-f", "--forex",
+        action='store_true',
+        help='If true, trade cryptocurrency instead of stocks using the Kraken exchange.')
+    parser.add_argument('-f', '--forex',
         required=False,
-        action="store_true",
-        help="If true, trade forex instead of stocks using the Kraken exchange.")
-    parser.add_argument("-t", "--testperiods",
+        action='store_true',
+        help='If true, trade forex instead of stocks using the Kraken exchange.')
+    parser.add_argument('-t', '--testperiods',
         type=int,
         required=False,
-        help="Number of periods to backtest")
-    parser.add_argument("-mx", "--max",
+        help='Number of periods to backtest')
+    parser.add_argument('-mx', '--max',
         type=float,
         required=False,
-        help="Max price per share we are willing to accept")
-    parser.add_argument("-mn", "--min",
+        help='Max price per share we are willing to accept')
+    parser.add_argument('-mn', '--min',
         type=float,
         required=False,
-        help="Min price per share we are willing to accept")
-    parser.add_argument("-p", "--period",
+        help='Min price per share we are willing to accept')
+    parser.add_argument('-p', '--period',
         type=str,
         required=False,
-        help="A period of time between candlestick bars, choices supported by Alpaca API are:  ")
-    parser.add_argument("-r", "--risk_pct",
+        help='A period of time between candlestick bars, choices supported by Alpaca API are:  ')
+    parser.add_argument('-r', '--risk_pct',
         type=float,
         required=False,
-        help="Percentage of trading balance to risk per trade.")
-    parser.add_argument("-C", "--cash",
+        help='Percentage of trading balance to risk per trade.')
+    parser.add_argument('-C', '--cash',
         type=float,
         required=False,
-        help="If set, backtest with a simulated account balance. Otherwise, use Alpaca account balance.")
-    parser.add_argument("-P", "--poolsize",
+        help='If set, backtest with a simulated account balance. Otherwise, use Alpaca account balance.')
+    parser.add_argument('-P', '--poolsize',
         type=int,
         required=False,
-        help="Number of stocks we want in our pool to choose from.")
+        help='Number of stocks we want in our pool to choose from.')
     return parser.parse_args()
