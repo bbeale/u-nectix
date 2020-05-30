@@ -20,7 +20,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.SMA(data)
         if result is None:
@@ -35,7 +35,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.SMM(data)
         if result is None:
@@ -50,7 +50,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.SSMA(data)
         if result is None:
@@ -65,7 +65,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.EMA(data)
         if result is None:
@@ -80,7 +80,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.DEMA(data)
         if result is None:
@@ -95,7 +95,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.TEMA(data)
         if result is None:
@@ -110,7 +110,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.TRIMA(data)
         if result is None:
@@ -125,7 +125,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.TRIX(data)
         if result is None:
@@ -140,7 +140,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.VAMA(data)
         if result is None:
@@ -159,7 +159,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.ER(data)
         if result is None:
@@ -174,7 +174,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.KAMA(data)
         if result is None:
@@ -189,7 +189,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.ZLEMA(data)
         if result is None:
@@ -204,7 +204,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.WMA(data)
         if result is None:
@@ -219,7 +219,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.HMA(data)
         if result is None:
@@ -234,7 +234,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.EVWMA(data)
         if result is None:
@@ -249,7 +249,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.VWAP(data)
         if result is None:
@@ -264,7 +264,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.SMMA(data)
         if result is None:
@@ -279,7 +279,7 @@ class Indicator:
         :return: a concatenated Pandas series with the MACD and signal values
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.MACD(data)
         if result is None:
@@ -294,7 +294,7 @@ class Indicator:
         :return: a concatenated Pandas series with the PPO and signal values
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.PPO(data)
         if result is None:
@@ -309,7 +309,7 @@ class Indicator:
         :return: a concatenated Pandas series with the VWMACD and signal values
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.VW_MACD(data)
         if result is None:
@@ -324,7 +324,7 @@ class Indicator:
         :return: a concatenated Pandas series with the EVMACD and signal values
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.EV_MACD(data)
         if result is None:
@@ -339,7 +339,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.MOM(data)
         if result is None:
@@ -354,7 +354,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.ROC(data)
         if result is None:
@@ -369,7 +369,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.RSI(data)
         if result is None:
@@ -384,7 +384,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.IFT_RSI(data)
         if result is None:
@@ -399,7 +399,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.TR(data)
         if result is None:
@@ -414,7 +414,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.ATR(data)
         if result is None:
@@ -429,7 +429,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.SAR(data)
         if result is None:
@@ -444,7 +444,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.BBANDS(data)
         if result is None:
@@ -459,7 +459,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.BBWIDTH(data)
         if result is None:
@@ -474,7 +474,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.PERCENT_B(data)
         if result is None:
@@ -489,7 +489,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.KC(data)
         if result is None:
@@ -504,7 +504,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.DO(data)
         if result is None:
@@ -519,7 +519,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.DMI(data)
         if result is None:
@@ -534,7 +534,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.ADX(data)
         if result is None:
@@ -549,7 +549,7 @@ class Indicator:
         :return: a concatenated Pandas series with 9 elements
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.PIVOT(data)
         if result is None:
@@ -564,7 +564,7 @@ class Indicator:
         :return: a concatenated Pandas series with 9 elements
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.PIVOT_FIB(data)
         if result is None:
@@ -579,7 +579,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.STOCH(data)
         if result is None:
@@ -594,7 +594,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.STOCHD(data)
         if result is None:
@@ -609,7 +609,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.STOCHRSI(data)
         if result is None:
@@ -624,7 +624,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.WILLIAMS(data)
         if result is None:
@@ -639,7 +639,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.UO(data)
         if result is None:
@@ -654,7 +654,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.AO(data)
         if result is None:
@@ -669,7 +669,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.MI(data)
         if result is None:
@@ -684,7 +684,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.VORTEX(data)
         if result is None:
@@ -699,7 +699,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.KST(data)
         if result is None:
@@ -714,7 +714,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.TSI(data)
         if result is None:
@@ -729,7 +729,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.TP(data)
         if result is None:
@@ -744,7 +744,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.ADL(data)
         if result is None:
@@ -759,7 +759,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.CHAIKIN(data)
         if result is None:
@@ -774,7 +774,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.MFI(data)
         if result is None:
@@ -789,7 +789,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.OBV(data)
         if result is None:
@@ -804,7 +804,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.WOBV(data)
         if result is None:
@@ -819,7 +819,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.VZO(data)
         if result is None:
@@ -834,7 +834,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.PZO(data)
         if result is None:
@@ -849,7 +849,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.EFI(data)
         if result is None:
@@ -864,7 +864,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.CFI(data)
         if result is None:
@@ -879,7 +879,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.EBBP(data)
         if result is None:
@@ -894,7 +894,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.EMV(data)
         if result is None:
@@ -909,7 +909,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.CCI(data)
         if result is None:
@@ -924,7 +924,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.COPP(data)
         if result is None:
@@ -939,7 +939,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.BASP(data)
         if result is None:
@@ -954,7 +954,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.BASPN(data)
         if result is None:
@@ -969,7 +969,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.CMO(data)
         if result is None:
@@ -984,7 +984,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.CHANDELIER(data)
         if result is None:
@@ -999,7 +999,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.QSTICK(data)
         if result is None:
@@ -1014,7 +1014,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.TMF(data)
         if result is None:
@@ -1029,7 +1029,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.WTO(data)
         if result is None:
@@ -1044,7 +1044,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.FISH(data)
         if result is None:
@@ -1059,7 +1059,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.ICHIMOKU(data)
         if result is None:
@@ -1074,7 +1074,7 @@ class Indicator:
         :return: a concatenated Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.APZ(data)
         if result is None:
@@ -1089,7 +1089,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.VR(data)
         if result is None:
@@ -1104,7 +1104,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.SQZMI(data)
         if result is None:
@@ -1119,7 +1119,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.VPT(data)
         if result is None:
@@ -1134,7 +1134,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.FVE(data)
         if result is None:
@@ -1149,7 +1149,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.VFI(data)
         if result is None:
@@ -1164,7 +1164,7 @@ class Indicator:
         :return: a Pandas series
         """
         if data is None:
-            raise EmptyDataError("[!] Invalid data value")
+            raise EmptyDataError('[!] Invalid data value')
 
         result = TA.MSD(data)
         if result is None:

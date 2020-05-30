@@ -22,7 +22,7 @@ class Algorithm(AssetSelector, BaseAlgo):
         super().__init__(broker=broker, cli_args=cli_args, edgar_token=None)
 
     """ Custom asset selection method goes here."""
-    def bullish_volume_efficient_frontier(self):
+    def bullish_volume_efficient_frontier(self, backtest=False, bt_offset=None):
         """
         Given a list of assets, evaluate which ones are bullish and return a sample of each.
 
@@ -32,11 +32,21 @@ class Algorithm(AssetSelector, BaseAlgo):
             raise AssetValidationException("[!] Invalid pool size.")
 
         self.portfolio = []
-        limit = 50
+        if backtest:
+            if not bt_offset or bt_offset is None:
+                raise AssetValidationException("[!] Must specify a number of periods to offset if backtesting.")
+            limit = bt_offset
+        else:
+            limit = 50
         while len(self.portfolio) < self.poolsize:
             for ass in self.tradeable_assets:
                 """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
-                df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+                if backtest:
+                    now = datetime.now(timezone("EST"))
+                    beginning = now - timedelta(days=self.offset)
+                    df = self.broker.get_barset_df(ass.symbol, self.period, until=time_from_datetime(beginning))
+                else:
+                    df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
 
                 # guard clauses to make sure we have enough data to work with
                 if df is None or len(df) != limit:

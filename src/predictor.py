@@ -4,6 +4,10 @@ from util import get_returns, sort_returns
 import tensorflow as tf
 
 
+"""
+https://towardsdatascience.com/how-to-write-a-profitable-strategy-for-algotrading-bitcoin-with-jesse-6c7064b22f1f
+"""
+
 class Predictor:
 
     def __init__(self, dataframe):
@@ -15,10 +19,10 @@ class Predictor:
     def get_securities_predictions(self):
         """Loop through tickers and run prediction algorithm."""
         for ticker in self.dataframe.keys():
-            train, test = self.get_predictions(self.dataframe[ticker]["close"])
+            train, test = self.get_predictions(self.dataframe[ticker]['close'])
             self.predictions[ticker] = dict()
-            self.predictions[ticker]["train"] = train
-            self.predictions[ticker]["test"] = test
+            self.predictions[ticker]['train'] = train
+            self.predictions[ticker]['test'] = test
         return self.predictions
 
     def get_predictions(self, data):
@@ -61,7 +65,7 @@ class Predictor:
             # every 1000 iterations record progress
             if (epoch + 1) % 1000 == 0:
                 c = self.sess.run(cost, feed_dict={x: train_ins, y_: train_outs.reshape(1, -1).T})
-                print("Epoch:", '%04d' % (epoch + 1), "cost=", "{:.9f}".format(c))
+                print('Epoch:', '%04d' % (epoch + 1), 'cost=', '{:.9f}'.format(c))
 
         # train
         predict = y

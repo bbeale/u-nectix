@@ -16,12 +16,20 @@ class Algorithm(AssetSelector, BaseAlgo):
     def __init__(self, broker, cli_args):
         super().__init__(broker=broker, cli_args=cli_args, edgar_token=None)
 
-    def bullish_overnight_momentum(self):
-        """
-        Given a list of assets, evaluate which ones are bullish and return a sample of each.
+    def bullish_overnight_momentum(self, backtest=False, bt_offset=None):
+        """Given a list of assets, evaluate which ones are bullish and return a sample of each.
 
         These method names should correspond with files in the algos/ directory.
+
+        :param backtest:
+        :param bt_offset:
         """
+        if backtest:
+            if not bt_offset or bt_offset is None:
+                raise AssetValidationException("[!] Must specify a number of periods to offset if backtesting.")
+            limit = bt_offset
+        else:
+            limit = 1000
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
             raise AssetValidationException("[!] Invalid pool size.")
 
@@ -29,11 +37,15 @@ class Algorithm(AssetSelector, BaseAlgo):
 
         for ass in self.tradeable_assets:
             """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
-            limit = 1000
-            df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+            if backtest:
+                now = datetime.now(timezone("EST"))
+                beginning = now - timedelta(days=self.offset)
+                df = self.broker.get_barset_df(ass.symbol, self.period, until=time_from_datetime(beginning))
+            else:
+                df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
 
             # guard clauses to make sure we have enough data to work with
-            if df is None or len(df) != limit:
+            if df is None or len(df) < 10:  # accounting for candlestick method needing 3 periods
                 continue
 
             # throw it away if the price is out of our min-max range

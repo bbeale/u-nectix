@@ -17,12 +17,12 @@ def download_xml(url, tries=1):
     try:
         response = requests.get(url)
     except requests.exceptions.HTTPError as httpe:
-        print(httpe, "Something went wrong. Wait for 5 seconds and try again.", tries)
+        print(httpe, 'Something went wrong. Wait for 5 seconds and try again.', tries)
         if tries < 5:
             time.sleep(5 * tries)
             download_xml(url, tries + 1)
     else:
-        print("Document URL:\t", url)
+        print('Document URL:\t', url)
 
         # decode the response into a string
         data = response.text
@@ -47,7 +47,7 @@ def calculate_transaction_amount(xml):
     if xml is None:
         return total
 
-    nonDerivativeTransactions = xml.findall("./nonDerivativeTable/nonDerivativeTransaction")
+    nonDerivativeTransactions = xml.findall('./nonDerivativeTable/nonDerivativeTransaction')
 
     for t in nonDerivativeTransactions:
         # D for disposed or A for acquired
@@ -78,9 +78,9 @@ def calculate_8k_transaction_amount(xml):
         return total
 
     # is the owner a 10 percent shareholder?
-    ownerpattern = "./reportingOwner/reportingOwnerRelationship/isTenPercentOwner"
+    ownerpattern = './reportingOwner/reportingOwnerRelationship/isTenPercentOwner'
     owner_holds_10_percent = True if int(xml.find(ownerpattern).text) > 0 else False
-    non_derivative_transactions = xml.findall("./nonDerivativeTable/nonDerivativeTransaction")
+    non_derivative_transactions = xml.findall('./nonDerivativeTable/nonDerivativeTransaction')
     init_shares = None
     total_shares = None
     for t in non_derivative_transactions:
@@ -102,7 +102,7 @@ def calculate_8k_transaction_amount(xml):
     try:
         percent_traded = (float(total_shares)/float(init_shares))
     except TypeError as te:
-        print(te, "- total_shares and init_shares must not be none")
+        print(te, '- total_shares and init_shares must not be none')
         percent_traded = None
     return init_shares, total_shares, percent_traded, owner_holds_10_percent
 
@@ -142,7 +142,7 @@ def bs_xml_parse(url, tries=1):
     try:
         response = requests.get(url)
     except requests.exceptions.HTTPError as httpe:
-        print(httpe, "Something went wrong. Wait for 5 seconds and try again.", tries)
+        print(httpe, 'Something went wrong. Wait for 5 seconds and try again.', tries)
         if tries < 5:
             time.sleep(5 * tries)
             bs_xml_parse(url, tries + 1)
@@ -152,17 +152,17 @@ def bs_xml_parse(url, tries=1):
         soup = BeautifulSoup(doc, 'xml')
 
         # grab all xml formatted documents
-        filings = soup.find_all("ownershipDocument")
+        filings = soup.find_all('ownershipDocument')
         for filing in filings:
             print(type(filing), filing)
-            docs.append({filing["name"].text: filing})
+            docs.append({filing['name'].text: filing})
 
         for doc in docs:
             # grab relevant tags from ownershipDocument
             soup = BeautifulSoup(doc, 'xml')
-            issuer = soup.find("issuer")
-            reporting_owner = soup.find("reportingOwner/rptOwnerName")
-            non_derivative_transaction = soup.find_all("nonDerivativeTransaction")
+            issuer = soup.find('issuer')
+            reporting_owner = soup.find('reportingOwner/rptOwnerName')
+            non_derivative_transaction = soup.find_all('nonDerivativeTransaction')
 
             for ndt in non_derivative_transaction:
-                print("P: ", ndt.text)
+                print('P: ', ndt.text)

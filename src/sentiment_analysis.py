@@ -9,13 +9,15 @@ class SentimentAnalysisException(Exception):
 
 class SentimentAnalysis:
 
-    def __init__(self, dataframe, texts):
+    def __init__(self, dataframe=None, texts=None):
 
         nltk.download('vader_lexicon')
+        if dataframe is not None:
+            self.dataframe = dataframe
+        if texts is not None:
+            self.texts = texts
 
-        self.sid        = SentimentIntensityAnalyzer()
-        self.dataframe  = dataframe
-        self.texts      = texts
+        self.sid = SentimentIntensityAnalyzer()
         self.sentiments = dict()
 
     def get_sentiments(self):
@@ -35,12 +37,12 @@ class SentimentAnalysis:
         try:
             text_polarity = sid.polarity_scores(text)
         except SentimentAnalysisException:
-            raise SentimentAnalysisException("[!] Unable to calculate polarity scores for this text element.")
+            raise SentimentAnalysisException('[!] Unable to calculate polarity scores for this text element.')
         else:
-            if text_polarity["compound"] > 0:
-                sentiment   = "positive"
+            if text_polarity['compound'] > 0:
+                sentiment   = 'positive'
 
             else:
-                sentiment   = "negative"
+                sentiment   = 'negative'
 
             return sentiment
