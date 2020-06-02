@@ -3,7 +3,7 @@
 from util import parse_configs, parse_args
 from alpaca_trade_api.rest import REST
 from src.asset_selector import AssetSelector
-from src.broker import Broker, BrokerException
+from broker.broker import Broker
 from unittest import TestCase
 import os
 
