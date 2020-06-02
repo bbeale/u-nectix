@@ -8,3 +8,5 @@ data/
 filings/
 
 *.pkl
+
+.scannerwork/*
