@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from src.broker import Broker, BrokerException, BrokerValidationException
-from src.krak_dealer import KrakDealer
-from src.forex_broker import ForexBroker
+from broker import BrokerException, BrokerValidationException
+from broker.broker import Broker
+from broker.krak_dealer import KrakDealer
+from broker.forex_broker import ForexBroker
 from util import parse_configs, parse_args
 from pykrakenapi.pykrakenapi import KrakenAPI, KrakenAPIError
 from alpaca_trade_api.rest import REST, APIError

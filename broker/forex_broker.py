@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from src.broker.broker import BrokerValidationException
+from broker import BrokerException, BrokerValidationException
 
 
 class ForexBroker:

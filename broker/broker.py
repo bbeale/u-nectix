@@ -1,16 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from requests.exceptions import HTTPError
+from broker import BrokerException, BrokerValidationException
 import pandas as pd
-import time
-
-
-class BrokerException(HTTPError, Exception):
-    pass
-
-
-class BrokerValidationException(ValueError):
-    pass
 
 
 class Broker(object):

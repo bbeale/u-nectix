@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from src.finta_interface import Indicator, IndicatorException
-from src.broker import BrokerException
+from broker import BrokerException
 from pandas.errors import EmptyDataError
 from util import time_from_timestamp
 import pandas as pd
