@@ -1,16 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from requests.exceptions import HTTPError
+from broker import BrokerException, BrokerValidationException
 import pandas as pd
-import time
-
-
-class BrokerException(HTTPError, Exception):
-    pass
-
-
-class BrokerValidationException(ValueError):
-    pass
 
 
 class Broker(object):
@@ -37,17 +28,12 @@ class Broker(object):
 
     """Data grabbing methods"""
     def get_account(self):
-        result = None
         try:
             result = self.api.get_account()
-        except BrokerException:
-            print('[!] Unable to get account. Retrying in 3s.')
-            time.sleep(3)
-            try:
-                result = self.api.get_account()
-            except BrokerException:
-                print('[!] Unable to get account.')
-        finally:
+        except BrokerException as err:
+            print('[!] Unable to get account.')
+            raise err
+        else:
             return result
 
     def get_clock(self):
@@ -57,8 +43,9 @@ class Broker(object):
         """
         try:
             return self.api.get_clock()
-        except BrokerException:
+        except BrokerException as err:
             print('[!] Unable to get the clock.')
+            raise err
 
     def get_calendar(self, start_date, end_date):
         """
@@ -70,17 +57,12 @@ class Broker(object):
         if not end_date or end_date is None:
             raise BrokerValidationException('[!] Invalid end_date.')
 
-        result = None
         try:
             result = self.api.get_calendar(start_date, end_date)
-        except BrokerException:
-            print('[!] Unable to get calendar. Retrying in 3s.')
-            time.sleep(3)
-            try:
-                result = self.api.get_calendar(start_date, end_date)
-            except BrokerException:
-                print('[!] Unable to get calendar.')
-        finally:
+        except BrokerException as err:
+            print('[!] Unable to get calendar.')
+            raise err
+        else:
             return result
 
     def get_assets(self):
@@ -88,17 +70,12 @@ class Broker(object):
 
         :return:
         """
-        result = None
         try:
             result = self.api.list_assets(status='active')
-        except BrokerException:
-            print('[!] Unable to get assets. Retrying in 3s...')
-            time.sleep(3)
-            try:
-                result = self.api.list_assets(status='active')
-            except BrokerException:
-                print('[!] Unable to get assets.')
-        finally:
+        except BrokerException as err:
+            print('[!] Unable to get assets.')
+            raise err
+        else:
             return result
 
     def get_asset(self, symbol):
@@ -109,35 +86,25 @@ class Broker(object):
         if not symbol or symbol is None:
             raise BrokerValidationException('[!] Invalid symbol.')
 
-        result = None
         try:
             result = self.api.get_asset(symbol=symbol)
-        except BrokerException:
-            print('[!] Unable to get asset. Retrying in 3s...')
-            time.sleep(3)
-            try:
-                result = self.api.get_asset(symbol=symbol)
-            except BrokerException:
-                print('[!] Unable to get asset.')
-        finally:
+        except BrokerException as err:
+            print('[!] Unable to get asset.')
+            raise err
+        else:
             return result
 
     def get_positions(self):
-        """Get a list of open positions for a given accountt.
+        """Get a list of open positions for a given account.
 
         :return:
         """
-        result = None
         try:
             result = self.api.list_positions()
-        except BrokerException:
-            print('[!] Unable to get open positions. Retrying in 3.')
-            time.sleep(3)
-            try:
-                result = self.api.list_positions()
-            except BrokerException:
-                print('[!] Unable to get open positions.')
-        finally:
+        except BrokerException as err:
+            print('[!] Unable to get open positions.')
+            raise err
+        else:
             return result
 
     def get_position(self, symbol):
@@ -149,17 +116,12 @@ class Broker(object):
         if not symbol or symbol is None:
             raise BrokerValidationException('[!] Invalid symbol.')
 
-        result = None
         try:
             result = self.api.get_position(symbol)
-        except BrokerException:
-            print('[!] Unable to get postion or positions for {}. Retrying.'.format(symbol))
-            time.sleep(3)
-            try:
-                result = self.api.get_position(symbol)
-            except BrokerException:
-                print('[!] Unable to get postion or positions for {}.'.format(symbol))
-        finally:
+        except BrokerException as err:
+            print(f'[!] Unable to get postion or positions for {symbol}.')
+            raise err
+        else:
             return result
 
     def close_all_positions(self):
@@ -169,13 +131,9 @@ class Broker(object):
         """
         try:
             result = self.api.close_all_positions()
-        except BrokerException:
+        except BrokerException as err:
             print('[!] An error occurred when liquidating posiitons.')
-            time.sleep(1)
-            try:
-                result = self.api.close_all_positions()
-            except BrokerException:
-                raise BrokerException('[!] An error occurred when liquidating posiitons.')
+            raise err
         else:
             return result
 
@@ -189,13 +147,9 @@ class Broker(object):
 
         try:
             result = self.api.close_position(symbol)
-        except BrokerException:
-            print('[!] An error occurred when closing {} posiitons. Retrying'.format(symbol))
-            time.sleep(3)
-            try:
-                result = self.api.close_position(symbol)
-            except BrokerException:
-                print('[!] Unable to close {} posiitons.'.format(symbol))
+        except BrokerException as err:
+            print(f'[!] An error occurred when closing {symbol} posiitons.')
+            raise err
         else:
             return result
 
@@ -209,17 +163,12 @@ class Broker(object):
          :param direction:
         :return:
         """
-        result = None
         try:
             result = self.api.list_orders(status=status, limit=limit, after=after, until=until, direction=direction)
-        except BrokerException:
-            print('[!] Unable to get {} orders. Retrying in 3.'.format(status))
-            time.sleep(3)
-            try:
-                result = self.api.list_orders(status=status, limit=limit, after=after, until=until, direction=direction)
-            except BrokerException:
-                print('[!] Unable to get {} orders.'.format(status))
-        finally:
+        except BrokerException as err:
+            print(f'[!] Unable to get {status} orders.')
+            raise err
+        else:
             return result
 
     def get_order(self, order_id, client_order_id=None):
@@ -229,35 +178,23 @@ class Broker(object):
         :param client_order_id:
         :return:
         """
-        result = None
         if client_order_id is not None:
             try:
                 print('[+] Getting order by client_order_id.')
                 result = self.api.get_order_by_client_order_id(client_order_id)
-            except BrokerException:
-                print('[!] Unable to get order for client_order_id {}. Retrying.'.format(client_order_id))
-                time.sleep(3)
-                try:
-                    result = self.api.get_order_by_client_order_id(client_order_id)
-                except BrokerException:
-                    print('[!] Unable to get order for client_order_id {}.'.format(client_order_id))
-                finally:
-                    return result
+            except BrokerException as err:
+                print(f'[!] Unable to get order for client_order_id {client_order_id}.')
+                raise err
         else:
             if not order_id or order_id is None:
                 raise BrokerValidationException('[!] Invalid order_id.')
-            print('[+] Getting order the normal way by order_id.')
             try:
+                print('[+] Getting order the normal way by order_id.')
                 result = self.api.get_order(order_id)
-            except BrokerException:
-                print('[!] Unable to get order {}. Retrying.'.format(order_id))
-                time.sleep(3)
-                try:
-                    result = self.api.get_order(order_id)
-                except BrokerException:
-                    print('[!] Unable to order {}.'.format(order_id))
-            finally:
-                return result
+            except BrokerException as err:
+                print('[!] Unable to get order {}.'.format(order_id))
+                raise err
+        return result
 
     def submit_order(self,
                      symbol,
@@ -286,23 +223,23 @@ class Broker(object):
             raise BrokerValidationException('[!] Invalid ticker symbol.')
 
         if not quantity or quantity is None or len(quantity) < 1:
-            raise BrokerValidationException('[!] Invalid qty')
+            raise BrokerValidationException('[!] Invalid qty.')
 
         if not transaction_side or transaction_side not in ['buy', 'sell']:
-            raise BrokerValidationException('[!] Invalid transaction_side')
+            raise BrokerValidationException('[!] Invalid transaction_side.')
 
         if not transaction_type or transaction_type not in ['market', 'limit', 'stop', 'stop_limit']:
-            raise BrokerValidationException('[!] Invalid ttype')
+            raise BrokerValidationException('[!] Invalid ttype.')
 
         if not time_in_force or time_in_force not in ['day', 'gtc', 'opg', 'cls', 'ioc', 'fok']:
-            raise BrokerValidationException('[!] Invalid time_in_force')
+            raise BrokerValidationException('[!] Invalid time_in_force.')
 
         # validate stop_price and limit_price if need be
         if transaction_type in ['limit', 'stop_limit'] and (not limit_price or limit_price is None):
-            raise BrokerValidationException('[!] limit_price required if transaction_type is limit or stop_limit')
+            raise BrokerValidationException('[!] limit_price required if transaction_type is limit or stop_limit.')
 
         if transaction_type in ['stop', 'stop_limit'] and (not stop_price or stop_price is None):
-            raise BrokerValidationException('[!] stop_price required if transaction_type is stop or stop_limit')
+            raise BrokerValidationException('[!] stop_price required if transaction_type is stop or stop_limit.')
 
         try:
             result = self.api.submit_order(
@@ -315,16 +252,9 @@ class Broker(object):
                 stop_price,
                 # extended_hours,
                 client_order_id)
-        except BrokerException:
-            print('[!] Unable to submit {} order for {}. Retrying'.format(transaction_side, symbol))
-            time.sleep(3)
-            try:
-                result = self.api.submit_order(symbol, quantity, transaction_side, transaction_type, time_in_force,
-                    limit_price, stop_price,
-                    # extended_hours,
-                    client_order_id)
-            except BrokerException:
-                print('[!] Unable to submit {} order for {}.'.format(transaction_side, symbol))
+        except BrokerException as err:
+            print(f'[!] Unable to submit {transaction_side} order for {symbol}.')
+            raise err
         else:
             return result
 
@@ -351,29 +281,24 @@ class Broker(object):
         try:
             # get an order so we can grab iuts type
             transaction_type = self.get_order(order_id)
-        except BrokerException:
+        except BrokerException as err:
             raise BrokerValidationException('[!] A transaction_type is needed from the order object to validate stop and limit price parameters.')
 
         if not quantity or quantity is None or len(quantity) < 1:
-            raise BrokerValidationException('[!] Invalid qty')
+            raise BrokerValidationException('[!] Invalid qty.')
 
         # validate stop_price and limit_price if need be
         if transaction_type in ['limit', 'stop_limit'] and (not limit_price or limit_price is None):
-            raise BrokerValidationException('[!] limit_price required if transaction_type is limit or stop_limit')
+            raise BrokerValidationException('[!] limit_price required if transaction_type is limit or stop_limit.')
 
         if transaction_type in ['stop', 'stop_limit'] and (not stop_price or stop_price is None):
-            raise BrokerValidationException('[!] stop_price required if transaction_type is stop or stop_limit')
+            raise BrokerValidationException('[!] stop_price required if transaction_type is stop or stop_limit.')
 
         try:
             result = self.api.replace_order(order_id, quantity, transaction_type, time_in_force, limit_price, stop_price, client_order_id)
-        except BrokerException:
-            print('[!] Unable to replace order. Retrying')
-            time.sleep(3)
-            try:
-                result = self.api.replace_order(order_id, quantity, transaction_type, time_in_force, limit_price, stop_price, client_order_id)
-
-            except BrokerException:
-                print('[!] Unable to replace order.')
+        except BrokerException as err:
+            print('[!] Unable to replace order.')
+            raise err
         else:
             return result
 
@@ -384,13 +309,9 @@ class Broker(object):
         """
         try:
             result = self.api.cancel_all_orders()
-        except BrokerException:
+        except BrokerException as err:
             print('[!] An error occurred when canceling orders.')
-            time.sleep(1)
-            try:
-                result = self.api.cancel_all_orders()
-            except BrokerException:
-                raise BrokerException('[!] An error occurred when canceling orders.')
+            raise err
         else:
             return result
 
@@ -402,16 +323,11 @@ class Broker(object):
         if not order_id or order_id is None:
             raise BrokerValidationException('[!] Invalid symbol.')
 
-        result = None
         try:
             result = self.api.close_position(order_id)
-        except BrokerException:
-            print('[!] An error occurred when canceling order {}. Retrying'.format(order_id))
-            time.sleep(3)
-            try:
-                result = self.api.close_position(order_id)
-            except BrokerException:
-                print('[!] Unable to cancel order {}.'.format(order_id))
+        except BrokerException as err:
+            print(f'[!] An error occurred when canceling order {order_id}.')
+            raise err
         else:
             return result
 
@@ -430,27 +346,19 @@ class Broker(object):
         if not period or period is None:
             raise BrokerValidationException('[!] Must present a valid period type.')
 
-        result = None
         if until is None:
             try:
                 result = self.api.get_barset(symbol, period, limit=limit)
-            except BrokerException:
-                print('[!] Unable to get barset for {}. Retrying in 3s...'.format(symbol))
-                time.sleep(3)
-                try:
-                    result = self.api.get_barset(symbol, period, limit=limit)
-                except BrokerException:
-                    print('[!] Unable to get barset or barset is None.')
+            except BrokerException as err:
+                print(f'[!] Unable to get barset for {symbol}.')
+                raise err
         else:
             try:
                 result = self.api.get_barset(symbol, period, limit=limit, until=until)
-            except BrokerException:
-                print('[!] Unable to get barset for {}. Retrying in 3s...'.format(symbol))
-                time.sleep(3)
-                try:
-                    result = self.api.get_barset(symbol, period, limit=limit, until=until)
-                except BrokerException:
-                    print('[!] Unable to get barset or barset is None.')
+            except BrokerException as err:
+                print(f'[!] Unable to get barset for {symbol}.')
+                raise err
+
         if len(result[symbol]) == 0:
             return None
         else:
@@ -463,17 +371,12 @@ class Broker(object):
 
         :return:
         """
-        result = None
         try:
             result = self.api.get_watchlists()
-        except BrokerException:
-            print('[!] Unable to get watchlists. Retrying in 3s...')
-            time.sleep(3)
-            try:
-                result = self.api.get_watchlists()
-            except BrokerException:
-                print('[!] Unable to get watchlists.')
-        finally:
+        except BrokerException as err:
+            print('[!] Unable to get watchlists.')
+            raise err
+        else:
             return result
 
     def get_watchlist(self, watchlist_id):
@@ -483,19 +386,14 @@ class Broker(object):
         :return:
         """
         if not watchlist_id or watchlist_id is None:
-            raise BrokerValidationException('[!] Invalid watchlist_id')
+            raise BrokerValidationException('[!] Invalid watchlist_id.')
 
-        result = None
         try:
             result = self.api.get_watchlist(watchlist_id=watchlist_id)
-        except BrokerException:
-            print('[!] Unable to get watchlist {}. Retrying in 3s...'.format(watchlist_id))
-            time.sleep(3)
-            try:
-                result = self.api.get_watchlist(watchlist_id=watchlist_id)
-            except BrokerException:
-                print('[!] Unable to get watchlist {}.'.format(watchlist_id))
-        finally:
+        except BrokerException as err:
+            print(f'[!] Unable to get watchlist {watchlist_id}.')
+            raise err
+        else:
             return result
 
     def add_watchlist(self, watchlist_name):
@@ -505,19 +403,14 @@ class Broker(object):
         :return:
         """
         if not watchlist_name or watchlist_name is None or watchlist_name is '':
-            raise BrokerValidationException('[!] Invalid watchlist_name')
+            raise BrokerValidationException('[!] Invalid watchlist_name.')
 
-        result = None
         try:
             result = self.api.add_watchlist(watchlist_name=watchlist_name)
-        except BrokerException:
-            print('[!] Unable to add watchlist {}. Retrying in 3s...'.format(watchlist_name))
-            time.sleep(3)
-            try:
-                result = self.api.add_watchlist(watchlist_name=watchlist_name)
-            except BrokerException:
-                print('[!] Unable to add watchlist {}.'.format(watchlist_name))
-        finally:
+        except BrokerException as err:
+            print(f'[!] Unable to add watchlist {watchlist_name}.')
+            raise err
+        else:
             return result
 
     def add_to_watchlist(self, watchlist_id, symbol):
@@ -528,22 +421,17 @@ class Broker(object):
         :return:
         """
         if not watchlist_id or watchlist_id is None:
-            raise BrokerValidationException('[!] Invalid watchlist_id')
+            raise BrokerValidationException('[!] Invalid watchlist_id.')
 
         if not symbol or symbol is None:
-            raise BrokerValidationException('[!] Invalid symbole')
+            raise BrokerValidationException('[!] Invalid symbol.')
 
-        result = None
         try:
             result = self.api.add_to_watchlist(watchlist_id=watchlist_id, symbol=symbol)
-        except BrokerException:
-            print('[!] Unable to add {} to watchlist. Retrying in 3s...'.format(symbol))
-            time.sleep(3)
-            try:
-                result = self.api.add_to_watchlist(watchlist_id=watchlist_id, symbol=symbol)
-            except BrokerException:
-                print('[!] Unable to add {} to watchlist.'.format(symbol))
-        finally:
+        except BrokerException as err:
+            print(f'[!] Unable to add {symbol} to watchlist.')
+            raise err
+        else:
             return result
 
     def clear_watchlist(self, watchlist_id):
@@ -553,18 +441,13 @@ class Broker(object):
         :return:
         """
         if not watchlist_id or watchlist_id is None:
-            raise BrokerValidationException('[!] Invalid watchlist_id')
+            raise BrokerValidationException('[!] Invalid watchlist_id.')
 
-        result = None
         try:
             result = self.get_watchlist(watchlist_id)
-        except BrokerException:
-            print('[!] Unable to get watchlist {}. Retrying in 3s...'.format(watchlist_id))
-            time.sleep(3)
-            try:
-                result = self.get_watchlist(watchlist_id)
-            except BrokerException:
-                print('[!] Unable to get watchlist {}.'.format(watchlist_id))
+        except BrokerException as err:
+            print(f'[!] Unable to get watchlist {watchlist_id}.')
+            raise err
         else:
             if len(result.assets) < 1:
                 # return the watchlist right away if it's empty
@@ -573,13 +456,9 @@ class Broker(object):
             for ass in result.assets:
                 try:
                     self.api.delete_from_watchlist(watchlist_id, ass['symbol'])
-                except BrokerException:
-                    print('[!] Unable to remove this item from the watchlist. Retrying in 3.')
-                    time.sleep(3)
-                    try:
-                        self.api.delete_from_watchlist(watchlist_id, ass['symbol'])
-                    except BrokerException:
-                        raise BrokerException('[!] Unable to remove this item from the watchlist')
+                except BrokerException as err:
+                    print('[!] Unable to remove this item from the watchlist.')
+                    raise err
                 else:
                     # explicitly continuing to the next asset if no exceptions are thrown
                     continue
@@ -609,7 +488,7 @@ class Broker(object):
 
     @staticmethod
     def calculate_tolerable_risk(balance, risk_pct):
-        """
+        """Calculate the risk dollar amount of a balance given a percentage.
 
         :param balance:
         :param risk_pct:

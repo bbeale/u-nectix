@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from requests.exceptions import HTTPError
-from src.broker import BrokerValidationException
-import pandas as pd
-import time
+from broker import BrokerException, BrokerValidationException
 
 
 class ForexBroker:

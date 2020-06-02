@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from pykrakenapi.pykrakenapi import KrakenAPIError
-from src.broker import BrokerValidationException
-import pandas as pd
-import time
+from broker import BrokerException, BrokerValidationException
 
 
 class KrakDealer:

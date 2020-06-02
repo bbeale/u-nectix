@@ -114,10 +114,10 @@ class AssetSelector:
     def get_assets(self, asset_class, algorithm):
         """ Second method of two stage init process. """
         if asset_class is None:
-            raise AssetValidationException('[!] ')
+            raise AssetValidationException('[!] Invalid asset_class.')
 
         if algorithm is None:
-            raise AssetValidationException('[!] ')
+            raise AssetValidationException('[!] Invalid algorithm.')
 
         if asset_class == 'equity':
             raw_assets = self._raw_equity_assets()
