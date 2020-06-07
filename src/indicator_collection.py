@@ -89,13 +89,13 @@ class Indicators:
 
         if backdate is not None:
             try:
-                data = self.broker.get_barset_df(ticker, period, backdate=backdate, limit=_limit)
+                data = self.broker.get_asset_df(ticker, period, backdate=backdate, limit=_limit)
             except BrokerException:
                 raise BrokerException('[!] Error getting bars.')
 
         else:
             try:
-                data = self.broker.get_barset_df(ticker, period, limit=_limit)
+                data = self.broker.get_asset_df(ticker, period, limit=_limit)
             except BrokerException:
                 raise BrokerException('[!] Error getting bars.')
 

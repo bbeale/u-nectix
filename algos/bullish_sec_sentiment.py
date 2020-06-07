@@ -3,12 +3,9 @@
 from src.indicator_collection import Indicators as Indicators
 from src.edgar_interface import EdgarInterface
 from src.asset_selector import AssetSelector
-from src.broker import BrokerException
+from broker.broker import BrokerException
 from algos import BaseAlgo
 from util import time_from_timestamp
-from src.sentiment_analysis import SentimentAnalysis as Sent
-from src.twitter_interface import TwitterInterface
-from src.predictor import Predictor
 import time
 
 

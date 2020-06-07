@@ -331,13 +331,19 @@ class Broker(object):
         else:
             return result
 
-    def get_barset_df(self, symbol, period, limit=50, until=None):
+    def get_asset_df(self,
+                     symbol,
+                     period,
+                     limit=1000,
+                     start=None,
+                     end=None):
         """Get a set of bars from the API given a symbol, a time period and a starting time.
 
         :param symbol:
         :param period:
         :param limit:
-        :param until:
+        :param start:
+        :param end:
         :return:
         """
         if not symbol or symbol is None:
@@ -346,19 +352,14 @@ class Broker(object):
         if not period or period is None:
             raise BrokerValidationException('[!] Must present a valid period type.')
 
-        if until is None:
-            try:
-                result = self.api.get_barset(symbol, period, limit=limit)
-            except BrokerException as err:
-                print(f'[!] Unable to get barset for {symbol}.')
-                raise err
-        else:
-            try:
-                result = self.api.get_barset(symbol, period, limit=limit, until=until)
-            except BrokerException as err:
-                print(f'[!] Unable to get barset for {symbol}.')
-                raise err
+        if start is None or end is None:
+            raise BrokerValidationException('[!] Must present start and end dates.')
 
+        try:
+            result = self.api.get_barset(symbol, period, limit=limit, start=start, end=end)
+        except BrokerException as err:
+            print(f'[!] Unable to get barset for {symbol}.')
+            raise err
         if len(result[symbol]) == 0:
             return None
         else:
@@ -474,7 +475,7 @@ class Broker(object):
         :param bars:
         :return:
         """
-        if not bars or bars is None:
+        if bars is None or bars.df.empty:
             raise BrokerValidationException('[!] Bars cannot be none')
 
         data            = pd.DataFrame(index=[bar.t for bar in bars if bar is not None])

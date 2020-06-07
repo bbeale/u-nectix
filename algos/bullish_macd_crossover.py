@@ -16,7 +16,7 @@ class Algorithm(AssetSelector, BaseAlgo):
         super().__init__(broker=broker, cli_args=cli_args, edgar_token=None)
 
     """ Custom asset selection method goes here."""
-    def bullish_macd_overnight_hold(self, backtest=False, bt_offset=None):
+    def bullish_macd_crossover(self, backtest=False, bt_offset=None):
         """
         Given a list of assets, evaluate which ones are bullish and return a sample of each.
 
@@ -29,7 +29,7 @@ class Algorithm(AssetSelector, BaseAlgo):
         else:
             limit = 1000
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
-            raise AssetValidationException('[!] Invalid pool size.')
+            raise AssetValidationException("[!] Invalid pool size.")
 
         self.portfolio = []
 
@@ -171,7 +171,7 @@ def run(broker, args):
         broker = broker
 
     if args.algorithm is None:
-        args.algorithm = 'bullish_macd_overnight_hold'
+        args.algorithm = "bullish_macd_crossover"
     if args.testperiods is None:
         args.testperiods = 30
 
