@@ -40,4 +40,4 @@ Work is being done to implement cryptocurrency trading with [Kraken](https://www
 
 ## run the script
 
-    `python main.py -b -tp 60 -a bullish_macd_crossover`   
+    `python main.py -b -tp 60 -a passive`   
