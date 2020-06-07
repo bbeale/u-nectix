@@ -360,6 +360,8 @@ class Broker(object):
         except BrokerException as err:
             print(f'[!] Unable to get barset for {symbol}.')
             raise err
+        if len(result[symbol]) == 0:
+            return None
         else:
             return self._bar_df(result[symbol])
 
