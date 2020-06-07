@@ -6,6 +6,18 @@ The name comes from a combination of the word "equity" and the animal genus [eun
 
 Work is being done to implement cryptocurrency trading with [Kraken](https://www.kraken.com) with work also planned to implement forex trading with [Oanda](https://www.oanda.com). On March 11, 2020, I received an email from Kraken stating that limited forex pairs were now available to trade on their exchange, however they have not implemented forex for US customers yet. Their decision to do so may impact the forex implementation.
 
+## algorithms currently implemented or WIP
+
+  bullish_gainers_and_losers
+  
+  bullish_macd_crossover
+  
+  bullish_overnight_momentum
+  
+  efficient_frontier
+  
+  passive
+
 ## instructions
 
 1. Clone repository
@@ -28,4 +40,4 @@ Work is being done to implement cryptocurrency trading with [Kraken](https://www
 
 ## run the script
 
-    `python main.py -b -tp 60 -a bullish_macd_overnight_hold`   
+    `python main.py -b -tp 60 -a bullish_macd_crossover`   
