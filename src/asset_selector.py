@@ -51,9 +51,13 @@ class AssetSelector:
         if not broker or broker is None:
             raise AssetValidationException('[!] A Broker instance is required.')
 
+        self.now = datetime.now(timezone('EST'))
+
         if cli_args.backtest is not None:
             self.backtesting = True
             self.offset = cli_args.testperiods
+            self.beginning = self.now - timedelta(days=self.offset)
+            self.backtest_beginning = self.beginning - timedelta(days=self.offset)
         else:
             self.backtesting = False
 
@@ -221,7 +225,7 @@ class AssetSelector:
                 raise AssetValidationException('[!] Unable to backtest without an offset period.')
             now = datetime.now(timezone('EST'))
             beginning = now - timedelta(days=self.offset)
-            df = self.broker.get_barset_df(asset.symbol, self.period, limit=limit, until=time_from_datetime(beginning))
+            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit, until=time_from_datetime(beginning))
         else:
-            df = self.broker.get_barset_df(asset.symbol, self.period, limit=limit)
+            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit)
         return df
