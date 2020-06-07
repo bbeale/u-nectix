@@ -1,14 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from src.asset_selector import AssetSelector, AssetValidationException
-from src.broker import BrokerException
+from broker.broker import BrokerException
 from algos import BaseAlgo
-
-from util import time_from_datetime
-from datetime import datetime, timedelta
-from pytz import timezone
-from finta import TA
-import pandas as pd
 
 
 class Algorithm(AssetSelector, BaseAlgo):
@@ -39,7 +33,7 @@ class Algorithm(AssetSelector, BaseAlgo):
             if ass is None or not ass.tradable or not ass.easy_to_borrow:
                 continue
 
-            df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+            df = self.broker.get_asset_df(ass.symbol, self.period, limit=limit)
             # df = self.broker.api.get_barset(ass.symbol, self.period, limit=1000).df
             # print(dir(df))
             # guard clauses to make sure we have enough data to work with
