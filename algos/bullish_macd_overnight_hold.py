@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from algos import BaseAlgo
 from src.asset_selector import AssetSelector, AssetValidationException
-from src.broker import BrokerException
+from broker import BrokerException
 from util import time_from_datetime
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -24,25 +24,41 @@ class Algorithm(AssetSelector, BaseAlgo):
         """
         if backtest:
             if not bt_offset or bt_offset is None:
-                raise AssetValidationException("[!] Must specify a number of periods to offset if backtesting.")
+                raise AssetValidationException('[!] Must specify a number of periods to offset if backtesting.')
             limit = bt_offset
         else:
             limit = 1000
         if not self.poolsize or self.poolsize is None or self.poolsize is 0:
-            raise AssetValidationException("[!] Invalid pool size.")
+            raise AssetValidationException('[!] Invalid pool size.')
 
         self.portfolio = []
 
         for ass in self.tradeable_assets:
             """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
-            df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+            if backtest:
+                # df = self.broker.get_asset_df(ass.symbol, self.period, start=time_from_datetime(self.backtest_beginning), end=time_from_datetime(self.beginning))
+                start = time_from_datetime(self.backtest_beginning)
+                end = time_from_datetime(self.beginning)
+            else:
+                # df = self.broker.get_asset_df(ass.symbol, self.period, start=time_from_datetime(self.beginning), end=time_from_datetime(self.now))
+                start = time_from_datetime(self.beginning)
+                end = time_from_datetime(self.now)
+
+            # get the dataframe
+            df = self.broker.get_asset_df(ass.symbol, self.period, limit=limit, start=start, end=end)
 
             # guard clauses to make sure we have enough data to work with
-            if df is None or len(df) != limit:
+            if df is None or df.empty:
+                continue
+
+            # is the most recent date in the data frame the end date?
+            df_end_date = str(df.iloc[-1].name).split(' ')[0]
+            has_end_date = df_end_date in end
+            if not has_end_date:
                 continue
 
             # throw it away if the price is out of our min-max range
-            close = df["close"].iloc[-1]
+            close = df['close'].iloc[-1]
             if close > self.max_stock_price or close < self.min_stock_price:
                 continue
 
@@ -68,15 +84,15 @@ class Algorithm(AssetSelector, BaseAlgo):
         risk_amt = total_risk
         for _, row in data.iterrows():
             # shares[row['symbol']] = int(float(row['rating']) / float(total_rating) * float(cash) / float(row['price']))
-            numshares = self.broker.calculate_position_size(row["price"], risk_amt)
+            numshares = self.broker.calculate_position_size(row['price'], risk_amt)
             if numshares > 10:
                 multiplier = int(numshares / 10)
                 numshares = multiplier * 10
-            shares[row["symbol"]] = numshares
-            risk_amt -= numshares * row["price"]
+            shares[row['symbol']] = numshares
+            risk_amt -= numshares * row['price']
         # debug
         for k, v in shares.items():
-            print("[*] Ticker: {}, Shares: {}".format(k, v))
+            print('[*] Ticker: {}, Shares: {}'.format(k, v))
         return shares
 
     def total_asset_value(self, positions, date):
@@ -98,8 +114,8 @@ class Algorithm(AssetSelector, BaseAlgo):
             close = barset[symbol][0].c
             open = barset[symbol][-1].o
             change = float(open - close)
-            positions[symbol] = {"shares": positions[symbol], "value": positions[symbol] * open, "change": change}
-            total_value += positions[symbol]["value"]
+            positions[symbol] = {'shares': positions[symbol], 'value': positions[symbol] * open, 'change': change}
+            total_value += positions[symbol]['value']
         return positions, total_value,
 
     def get_ratings(self, algo_time=None, window_size=5):
@@ -110,9 +126,9 @@ class Algorithm(AssetSelector, BaseAlgo):
         :return:
         """
         if not algo_time or algo_time is None:
-            raise ValueError("[!] Invalid algo_time.")
+            raise ValueError('[!] Invalid algo_time.')
 
-        ratings = pd.DataFrame(columns=['symbol', 'rating', "price", 'macd', 'signal'])
+        ratings = pd.DataFrame(columns=['symbol', 'rating', 'price', 'macd', 'signal'])
         index = 0
         window_size = window_size
         formatted_time = None
@@ -134,13 +150,13 @@ class Algorithm(AssetSelector, BaseAlgo):
 
                     price = bars[-1].c
                     macd = TA.MACD(bars.df)
-                    current_macd = macd["MACD"].iloc[-1]
-                    current_signal = macd["SIGNAL"].iloc[-1]
+                    current_macd = macd['MACD'].iloc[-1]
+                    current_signal = macd['SIGNAL'].iloc[-1]
                     signal_divergence = current_macd - current_signal
 
                     if signal_divergence < 0 and current_macd < 0:
                         ratings = ratings.append(
-                            {'symbol': symbol, 'rating': signal_divergence, "price": price, 'macd': current_macd,
+                            {'symbol': symbol, 'rating': signal_divergence, 'price': price, 'macd': current_macd,
                                 'signal': current_signal}, ignore_index=True)
             index += 200
         ratings = ratings.sort_values('rating', ascending=True)
@@ -150,12 +166,12 @@ class Algorithm(AssetSelector, BaseAlgo):
 def run(broker, args):
 
     if not broker or broker is None:
-        raise BrokerException("[!] A broker instance is required.")
+        raise BrokerException('[!] A broker instance is required.')
     else:
         broker = broker
 
     if args.algorithm is None:
-        args.algorithm = "bullish_macd_overnight_hold"
+        args.algorithm = 'bullish_macd_overnight_hold'
     if args.testperiods is None:
         args.testperiods = 30
 
@@ -175,13 +191,13 @@ def run(broker, args):
     algorithm = Algorithm(broker, args)
 
     symbols = algorithm.portfolio
-    print("[*] Trading assets: {}".format(",".join(symbols)))
+    print('[*] Trading assets: {}'.format(','.join(symbols)))
 
     if args.backtest:
         # TODO: Make all time usages consistent
-        now = datetime.now(timezone("EST"))
+        now = datetime.now(timezone('EST'))
         beginning = now - timedelta(days=args.testperiods)
-        calendars = broker.get_calendar(start_date=beginning.strftime("%Y-%m-%d"), end_date=now.strftime("%Y-%m-%d"))
+        calendars = broker.get_calendar(start_date=beginning.strftime('%Y-%m-%d'), end_date=now.strftime('%Y-%m-%d'))
         portfolio = {}
         cal_index = 0
 
@@ -189,21 +205,21 @@ def run(broker, args):
             # see how much we got back by holding the last day's picks overnight
             positions, asset_value = algorithm.total_asset_value(portfolio, calendar.date)
             cash += asset_value
-            print("[*] Cash account value on {}: ${}".format(calendar.date.strftime("%Y-%m-%d"), round(cash, 2)),
-                "Risk amount: ${}".format(round(risk_amount, 2)))
+            print('[*] Cash account value on {}: ${}'.format(calendar.date.strftime('%Y-%m-%d'), round(cash, 2)),
+                'Risk amount: ${}'.format(round(risk_amount, 2)))
 
             if cash <= 0:
-                print("[!] Account has gone to $0.")
+                print('[!] Account has gone to $0.')
                 break
 
             if cal_index == len(calendars) - 1:
-                print("[*] End of the backtesting window.")
-                print("[*] Starting account value: {}".format(starting_amount))
-                print("[*] Holdings: ")
+                print('[*] End of the backtesting window.')
+                print('[*] Starting account value: {}'.format(starting_amount))
+                print('[*] Holdings: ')
                 for k, v in portfolio.items():
-                    print(" - Symbol: {}, Shares: {}, Value: {}".format(k, v["shares"], v["value"]))
-                print("[*] Account value: {}".format(round(cash, 2)))
-                print("[*] Change from starting value: ${}". format(round(float(cash) - float(starting_amount), 2)))
+                    print(' - Symbol: {}, Shares: {}, Value: {}'.format(k, v['shares'], v['value']))
+                print('[*] Account value: {}'.format(round(cash, 2)))
+                print('[*] Change from starting value: ${}'. format(round(float(cash) - float(starting_amount), 2)))
                 break
 
             # calculate MACD based ratings for a particular day
@@ -211,7 +227,7 @@ def run(broker, args):
             portfolio = algorithm.portfolio_allocation(ratings, risk_amount)
 
             for _, row in ratings.iterrows():
-                # "Buy" our shares on that day and subtract the cost.
+                # 'Buy' our shares on that day and subtract the cost.
                 shares_to_buy = int(portfolio[row['symbol']])
                 cost = row['price'] * shares_to_buy
                 cash -= cost
@@ -225,13 +241,13 @@ def run(broker, args):
         sold_today = False
         try:
             orders = broker.get_orders(after=time_from_datetime(datetime.today() - timedelta(days=1)), limit=400,
-                status="all")
+                status='all')
         except BrokerException:
             # We don't have any orders, so we've obviously not done anything today.
             pass
         else:
             for order in orders:
-                if order.side == "buy":
+                if order.side == 'buy':
                     bought_today = True
                     # This handles an edge case where the script is restarted right before the market closes.
                     sold_today = True
@@ -246,26 +262,26 @@ def run(broker, args):
             #     if sold_today:
             #         time_until_close = clock.next_close - clock.timestamp
             #         if time_until_close.seconds <= 120:
-            #             print("[+] Buying position(s).")
+            #             print('[+] Buying position(s).')
             #             portfolio_cash = float(broker.api.get_account().cash)
             #             ratings = algorithm.get_ratings(window_size=10)
             #             portfolio = algorithm.portfolio_allocation(ratings, portfolio_cash)
             #             for symbol in portfolio:
-            #                 broker.api.submit_order(symbol=symbol, qty=portfolio[symbol], side="buy", type="market",
-            #                     time_in_force="day")
-            #             print("[*] Position(s) bought.")
+            #                 broker.api.submit_order(symbol=symbol, qty=portfolio[symbol], side='buy', type='market',
+            #                     time_in_force='day')
+            #             print('[*] Position(s) bought.')
             #             bought_today = True
             #     else:
             #         # sell our old positions before buying new ones.
             #         time_after_open = clock.next_open - clock.timestamp
             #         if time_after_open.seconds >= 60:
-            #             print("[-] Liquidating positions.")
+            #             print('[-] Liquidating positions.')
             #             broker.api.close_all_positions()
             #         sold_today = True
             # else:
             #     bought_today = False
             #     sold_today = False
             #     if cycle % 10 == 0:
-            #         print("[*] Waiting for next market day...")
+            #         print('[*] Waiting for next market day...')
             # time.sleep(30)
             # cycle += 1

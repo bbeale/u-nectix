@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from src.asset_selector import AssetSelector, AssetValidationException
-from src.broker import BrokerException
+from broker import BrokerException
 from util import time_from_datetime
 from algos import BaseAlgo
 from datetime import datetime, timedelta
@@ -24,28 +24,39 @@ class Algorithm(AssetSelector, BaseAlgo):
         :param backtest:
         :param bt_offset:
         """
+        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
+            raise AssetValidationException("[!] Invalid pool size.")
+
+        self.portfolio = []
         if backtest:
             if not bt_offset or bt_offset is None:
                 raise AssetValidationException("[!] Must specify a number of periods to offset if backtesting.")
             limit = bt_offset
         else:
             limit = 1000
-        if not self.poolsize or self.poolsize is None or self.poolsize is 0:
-            raise AssetValidationException("[!] Invalid pool size.")
-
-        self.portfolio = []
 
         for ass in self.tradeable_assets:
             """ The extraneous stuff that currently happens before the main part of evaluate_candlestick """
             if backtest:
-                now = datetime.now(timezone("EST"))
-                beginning = now - timedelta(days=self.offset)
-                df = self.broker.get_barset_df(ass.symbol, self.period, until=time_from_datetime(beginning))
+                # df = self.broker.get_asset_df(ass.symbol, self.period, start=time_from_datetime(self.backtest_beginning), end=time_from_datetime(self.beginning))
+                start = time_from_datetime(self.backtest_beginning)
+                end = time_from_datetime(self.beginning)
             else:
-                df = self.broker.get_barset_df(ass.symbol, self.period, limit=limit)
+                # df = self.broker.get_asset_df(ass.symbol, self.period, start=time_from_datetime(self.beginning), end=time_from_datetime(self.now))
+                start = time_from_datetime(self.beginning)
+                end = time_from_datetime(self.now)
+
+            # get the dataframe
+            df = self.broker.get_asset_df(ass.symbol, self.period, limit=limit, start=start, end=end)
 
             # guard clauses to make sure we have enough data to work with
-            if df is None or len(df) < 10:  # accounting for candlestick method needing 3 periods
+            if df is None or df.empty:
+                continue
+
+            # is the most recent date in the data frame the end date?
+            df_end_date = str(df.iloc[-1].name).split(' ')[0]
+            has_end_date = df_end_date in end
+            if not has_end_date:
                 continue
 
             # throw it away if the price is out of our min-max range
