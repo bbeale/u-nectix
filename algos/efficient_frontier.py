@@ -5,8 +5,8 @@ from src.asset_selector import AssetSelector, AssetValidationException, AssetExc
 from broker import BrokerException
 from util import time_from_datetime
 from pypfopt.efficient_frontier import EfficientFrontier
-from pypfopt import expected_returns
-from pypfopt import risk_models
+from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
+from pypfopt import expected_returns, risk_models
 from datetime import datetime, timedelta
 from pytz import timezone
 import pandas as pd
@@ -89,14 +89,34 @@ class Algorithm(AssetSelector, BaseAlgo):
             raise AssetException('[!] Somehow start and end got unassigned')
 
         # EF calculation
-        df = self.broker.api.get_barset(symbols=','.join(self.portfolio), limit=limit, timeframe=self.period, start=start, end=end)
+        df = self.broker.api.get_barset(symbols=','.join(self.portfolio), limit=limit, timeframe=self.period, start=start, end=end).df
 
+        close_data = pd.DataFrame()
         for k, v in df.items():
-            df[k] = v.df['close']
+            # df[k] = v.df['close']
+            print(k[0])
+            # close_data[str(k[0])] =
+
+            # todo: get my dataframe into a form that PyPortfolioOpt is able to consume
 
         mean_return = expected_returns.mean_historical_return(df)
         sample_cov_matrix = risk_models.sample_cov(df)
         frontier = EfficientFrontier(mean_return, sample_cov_matrix)
+        weights = frontier.max_sharpe()
+        cleaned_weights = frontier.clean_weights()
+        print('[+] Weights and clean weights:')
+        print(weights)
+        print(cleaned_weights)
+        frontier.portfolio_performance(verbose=True)
+        latest_prices = get_latest_prices(df.df)
+        print('[+] Latest prices:')
+        print(latest_prices)
+
+        da = DiscreteAllocation(weights, latest_prices, total_portfolio_value=10000)
+        allocation, leftover = da.lp_portfolio()
+        print("Discrete allocation:", allocation)
+        print("Funds remaining: ${:.2f}".format(leftover))
+
         # reset instance portfolio to contents of frontier.tickers
         self.portfolio = frontier.tickers
 
