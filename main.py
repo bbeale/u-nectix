@@ -80,7 +80,7 @@ def main(config, args):
 
         try:
             broker = Broker(alpaca)
-        except (BrokerException, BrokerValidationException, Exception) as error:
+        except (BrokerException, BrokerValidationException) as error:
             raise error
         else:
             # is our account restricted from trading?
