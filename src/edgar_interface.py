@@ -6,8 +6,7 @@ from lib.edgar import (
     calculate_transaction_amount,
     calculate_8k_transaction_amount,
 )
-
-import requests
+from requests import post, HTTPError
 import json
 import time
 
@@ -68,17 +67,12 @@ class EdgarInterface:
             'size': size,
             'sort': sort
         }
-        resp = None
+
         try:
-            resp = requests.post(self.api, json.dumps(payload), headers={'Content-Type': 'application/json; charset=utf-8'}).json()
-        except requests.HTTPError as httpe:
-            print(httpe, '- Unable to submit API request. Retrying...')
-            time.sleep(3)
-            try:
-                resp = requests.post(self.api, json.dumps(payload), headers={'Content-Type': 'application/json; charset=utf-8'}).json()
-            except requests.HTTPError as httpe:
-                print(httpe, '- Unable to submit API request.')
-        finally:
+            resp = post(self.api, json.dumps(payload), headers={'Content-Type': 'application/json; charset=utf-8'}).json()
+        except HTTPError as httpe:
+            print(httpe, '- Unable to submit API request.')
+        else:
             return resp
 
     def calculate_edgar_signal(self, ticker, from_date, to_date):
@@ -131,6 +125,5 @@ class EdgarInterface:
 
             else:
                 print('[!] Unable to generate signal from SEC filings')
-                continue
 
         return signal

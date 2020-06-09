@@ -28,6 +28,7 @@ def run(broker, args):
     if not broker or broker is None:
         raise BrokerException('[!] A broker instance is required.')
 
+    """Trade example ganked from https://github.com/alpacahq/example-portfolio-manager and implemented here."""
     manager = PortfolioManager(broker.api)
     # Hedging SPY with GLD 1:1
     manager.add_items([

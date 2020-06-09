@@ -91,14 +91,6 @@ class Algorithm(AssetSelector, BaseAlgo):
         # EF calculation
         df = self.broker.api.get_barset(symbols=','.join(self.portfolio), limit=limit, timeframe=self.period, start=start, end=end).df
 
-        close_data = pd.DataFrame()
-        for k, v in df.items():
-            # df[k] = v.df['close']
-            print(k[0])
-            # close_data[str(k[0])] =
-
-            # todo: get my dataframe into a form that PyPortfolioOpt is able to consume
-
         mean_return = expected_returns.mean_historical_return(df)
         sample_cov_matrix = risk_models.sample_cov(df)
         frontier = EfficientFrontier(mean_return, sample_cov_matrix)
@@ -108,7 +100,7 @@ class Algorithm(AssetSelector, BaseAlgo):
         print(weights)
         print(cleaned_weights)
         frontier.portfolio_performance(verbose=True)
-        latest_prices = get_latest_prices(df.df)
+        latest_prices = get_latest_prices(df)
         print('[+] Latest prices:')
         print(latest_prices)
 

@@ -182,7 +182,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--algorithm',
         type=str,
-        required=True,
+        required=False,
         help='The algorithm we want to trade with -- must be a valid file in the algos directory')
     parser.add_argument('-b', '--backtest',
         required=False,
