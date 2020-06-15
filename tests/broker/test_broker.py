@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from broker.broker import Broker
-from util import parse_configs, parse_args
+from util import parse_configs, time_from_timestamp
 from alpaca_trade_api.rest import REST
 from broker.broker import Broker
 from unittest import TestCase
+import alpaca_trade_api.entity as Ent
+import time
 import os
 
 
@@ -18,17 +20,19 @@ class TestBroker(TestCase):
     def test_get_account(self):
 
         res = TestBroker.broker.get_account()
-        print('[] ')
+        self.assertIsInstance(res, Ent.Account)
 
     def test_get_clock(self):
 
         res = TestBroker.broker.get_clock()
-        print('[] ')
+        self.assertIsInstance(res, Ent.Clock)
 
     def test_get_calendar(self):
-
-        res = TestBroker.broker.get_calendar()
-        print('[] ')
+        start = time_from_timestamp(time.time() - (604800 * 54))
+        end = time_from_timestamp(time.time())
+        res = TestBroker.broker.get_calendar(start_date=start, end_date=end)
+        self.assertIsInstance(res, list)
+        self.assertIsInstance(res[0], Ent.Calendar)
 
     def test_get_assets(self):
 
