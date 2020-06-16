@@ -12,12 +12,12 @@ class TestAssetSelector(TestCase):
 
     config = parse_configs(path=os.path.join("../../", "config.ini"))
     args = parse_args()
-    if args.mode is None:
-        args.mode = 'long'
+    # if args.mode is None:
+    #     args.mode = 'long'
     if args.period is None:
         args.period = "1D"
     if args.algorithm is None:
-        args.algorithm = "bullish_overnight_momentum"
+        args.algorithm = "efficient_frontier"
     if args.testperiods is None:
         args.testperiods = 30
     if args.max is None:
@@ -30,8 +30,10 @@ class TestAssetSelector(TestCase):
     broker = Broker(alpaca)
     selector = AssetSelector(broker, cli_args=args)
 
-    def test_candlestick_patterns(self):
-        pass
+    def test_get_assets(self):
+
+        res = TestAssetSelector.selector.get_assets('equity', 'efficient_frontier')
+        print('[] ')
 
     def test_candle_pattern_direction(self):
         pass
