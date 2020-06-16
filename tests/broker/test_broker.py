@@ -35,42 +35,42 @@ class TestBroker(TestCase):
         self.assertIsInstance(res[0], Ent.Calendar)
 
     def test_get_assets(self):
-
         res = TestBroker.broker.get_assets()
-        print('[] ')
+        self.assertIsInstance(res, list)
+        self.assertIsInstance(res[0], Ent.Asset)
 
     def test_get_asset(self):
-
-        res = TestBroker.broker.get_asset()
-        print('[] ')
+        ticker = 'AAPL'
+        res = TestBroker.broker.get_asset(ticker)
+        self.assertIsInstance(res, Ent.Asset)
 
     def test_get_positions(self):
-
         res = TestBroker.broker.get_positions()
-        print('[] ')
+        self.assertIsInstance(res, list)
+        self.assertIsInstance(res[0], Ent.Position)
 
     def test_get_position(self):
-
-        res = TestBroker.broker.get_position()
-        print('[] ')
+        ticker = 'AAPL'
+        res = TestBroker.broker.get_position(ticker)
+        self.assertIsInstance(res, Ent.Position)
 
     def test_close_all_positions(self):
-
         res = TestBroker.broker.close_all_positions()
-        print('[] ')
+        self.assertIsInstance(res, list)
+        self.assertEqual(len(res), 0)
 
     def test_close_position(self):
-
-        res = TestBroker.broker.close_position()
-        print('[] ')
+        ticker = 'AAPL'
+        res = TestBroker.broker.close_position(ticker)
+        self.assertIsInstance(res, Ent.Order)
 
     def test_get_orders(self):
-
         res = TestBroker.broker.get_orders()
-        print('[] ')
+        self.assertIsInstance(res, list)
+        self.assertIsInstance(res[0], Ent.Order)
 
     def test_get_order(self):
-
+        ticker = 'AAPL'
         res = TestBroker.broker.get_order()
         print('[] ')
 
