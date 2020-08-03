@@ -48,7 +48,9 @@ def main(config, args):
     if args.crypto:
         print('[-] do stuff with Kraken.')
         try:
-            api = krakenex.API(key=config['kraken']['api_key'], secret=config['kraken']['private_key'])
+            api = krakenex.API(
+                key=config['kraken']['api_key'],
+                secret=config['kraken']['private_key'])
             kraken = KrakenAPI(api, tier='Starter')
         except KrakenAPIError as error:
             raise error
@@ -73,8 +75,11 @@ def main(config, args):
     else:
         # we must be trading stocks
         try:
-            alpaca = REST(base_url=config['alpaca']['APCA_API_BASE_URL'], key_id=config['alpaca']['APCA_API_KEY_ID'],
-                secret_key=config['alpaca']['APCA_API_SECRET_KEY'], api_version=config['alpaca']['VERSION'])
+            alpaca = REST(
+                base_url=config['alpaca']['APCA_API_BASE_URL'],
+                key_id=config['alpaca']['APCA_API_KEY_ID'],
+                secret_key=config['alpaca']['APCA_API_SECRET_KEY'],
+                api_version=config['alpaca']['VERSION'])
         except APIError as error:
             raise error
 
