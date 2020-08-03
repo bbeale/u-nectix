@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 from src.sentiment_analysis import SentimentAnalysis, SentimentAnalysisException
 from src.edgar_interface import EdgarInterface
-from py_trade_signal import TradeSignal
 from datetime import datetime, timedelta
-from util import time_from_datetime
+from broker.broker import Broker
+from argparse import Namespace
 from pytz import timezone
-# removing for now until the state of the PR is determined
-# from alpaca_trade_api.stocktwits import REST
+import pandas as pd
 
 
 class AssetException(Exception):
@@ -24,7 +23,7 @@ class DataframeException(AssetException):
 
 class AssetSelector:
 
-    def __init__(self, broker, cli_args, edgar_token=None):
+    def __init__(self, broker: Broker, cli_args: Namespace, edgar_token: str = None):
         """Initialize the asset selector with an optional edgar token
 
         TODO: Incorporate Twitter api and trade signals
@@ -104,9 +103,6 @@ class AssetSelector:
         self.assets_by_filing = None
         self.portfolio = None
 
-        # initialize trade signal
-        self.signaler = TradeSignal()
-
         # setting api key to None for now because I'm not using authenticated endpoints
         # self.stocktwits = REST(api_key=None)
 
@@ -115,33 +111,24 @@ class AssetSelector:
         # init stage two:
         self.get_assets(self.asset_class, self.algorithm)
 
-    def get_assets(self, asset_class, algorithm):
+    def get_assets(self, asset_class: str, algorithm: str) -> None:
         """ Second method of two stage init process. """
-        if asset_class is None:
-            raise AssetValidationException('[!] Invalid asset_class.')
-
-        if algorithm is None:
-            raise AssetValidationException('[!] Invalid algorithm.')
-
         if asset_class == 'equity':
             raw_assets = self._raw_equity_assets()
             self._tradeable_equity_assets(raw_assets, algorithm)
         else:
             raise NotImplementedError('[!] Crypto and forex asset trading is coming soon.')
 
-    def _raw_equity_assets(self):
+    def _raw_equity_assets(self) -> list:
         """Get assets from Alpaca API and assign them to self.raw_assets."""
         return self.broker.get_assets()
 
-    def _tradeable_equity_assets(self, asset_list, algorithm, short=False):
+    def _tradeable_equity_assets(self, asset_list: list, algorithm: str, short: bool = False) -> None:
         """Scrub the list of assets from the Alpaca API response and get just the ones we can trade.
 
         :param asset_list:
         :return:
         """
-        if not asset_list or asset_list is None or len(asset_list) is 0:
-            raise AssetValidationException('[!] Invalid asset_list.')
-
         if algorithm not in [item for item in dir(self) if '__' not in item]:
             raise AssetValidationException('[!] Unable to determine asset selector method in the context of AssetSelector')
 
@@ -160,7 +147,7 @@ class AssetSelector:
             selection_method()
 
     @staticmethod
-    def _candlestick_patterns(c1, c2, c3):
+    def _candlestick_patterns(c1: pd.Series, c2: pd.Series, c3: pd.Series) -> str:
         """Pilfered from Alpaca Slack channel
 
         :param c1:
@@ -168,9 +155,6 @@ class AssetSelector:
         :param c3:
         :return:
         """
-        if c1 is None or c2 is None or c3 is None:
-            raise AssetValidationException('[!] Must provide valid candlestick values to obtain a pattern.')
-
         pattern = None
         # LOCH bullish
         if c1.low < c1.open < c1.close <= c1.high and c1.high - c1.close < c1.open - c1.low and c1.close - c1.open < c1.open - c1.low:
@@ -190,15 +174,12 @@ class AssetSelector:
             pattern = 'threeWhiteSoldiers'
         return pattern
 
-    def candle_pattern_direction(self, dataframe):
+    def candle_pattern_direction(self, dataframe: pd.DataFrame) -> str:
         """Given a series, get the candlestick pattern of the last 3 periods.
 
         :param dataframe:
         :return:
         """
-        if dataframe is None:
-            raise DataframeException('[!] Dataframe cannot be None.')
-
         pattern = self._candlestick_patterns(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
         direction = None
 
@@ -210,7 +191,7 @@ class AssetSelector:
 
         return direction
 
-    def get_asset_dataframe(self, asset, backtest=False, limit=None):
+    def get_asset_dataframe(self, asset, backtest: bool = False, limit: int = None):
         """
 
         :param asset:
@@ -225,7 +206,7 @@ class AssetSelector:
                 raise AssetValidationException('[!] Unable to backtest without an offset period.')
             now = datetime.now(timezone('EST'))
             beginning = now - timedelta(days=self.offset)
-            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit, until=time_from_datetime(beginning))
+            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit, start=beginning, end=now)
         else:
             df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit)
         return df
