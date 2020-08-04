@@ -2,7 +2,14 @@
 # -*- coding: utf-8 -*-
 from src.sentiment_analysis import SentimentAnalysis, SentimentAnalysisException
 from src.edgar_interface import EdgarInterface
+from py_trade_signal.macd import MacdSignal
+from py_trade_signal.mfi import MfiSignal
+from py_trade_signal.obv import ObvSignal
+from py_trade_signal.rsi import RsiSignal
+from py_trade_signal.vzo import VzoSignal
+from alpaca_trade_api.entity import Asset
 from datetime import datetime, timedelta
+from util import time_from_datetime
 from broker.broker import Broker
 from argparse import Namespace
 from pytz import timezone
@@ -123,7 +130,7 @@ class AssetSelector:
         """Get assets from Alpaca API and assign them to self.raw_assets."""
         return self.broker.get_assets()
 
-    def _tradeable_equity_assets(self, asset_list: list, algorithm: str, short: bool = False) -> None:
+    def _tradeable_equity_assets(self, asset_list: list, algorithm: str, limit: int = 1000, short: bool = False) -> None:
         """Scrub the list of assets from the Alpaca API response and get just the ones we can trade.
 
         :param asset_list:
@@ -138,13 +145,47 @@ class AssetSelector:
         else:
             self.tradeable_assets = [a for a in asset_list if a.tradable and a.marginable]
 
-        # populate our portfolio based on our trading algorithm
-        selection_method = getattr(self, algorithm)
+        self.portfolio = []
+        for ass in self.tradeable_assets:
+            if len(self.portfolio) >= self.poolsize:
+                # exit the filter process
+                break
 
-        if self.backtesting:
-            selection_method(self.backtesting, self.offset)
-        else:
-            selection_method()
+            if self.backtesting:
+                start = time_from_datetime(self.backtest_beginning)
+                end = time_from_datetime(self.beginning)
+            else:
+                start = time_from_datetime(self.beginning)
+                end = time_from_datetime(self.now)
+
+            # get the dataframe
+            df = self.broker.get_asset_df(ass.symbol, self.period, limit=limit, start=start, end=end)
+
+            # guard clauses to make sure we have enough data to work with
+            if df is None or df.empty:
+                continue
+
+            # is the most recent date in the data frame the end date?
+            df_end_date = str(df.iloc[-1].name).split(' ')[0]
+            has_end_date = df_end_date in end
+            if not has_end_date:
+                continue
+
+            # throw it away if the price is out of our min-max range
+            close = df["close"].iloc[-1]
+            if close > self.max_stock_price or close < self.min_stock_price:
+                continue
+
+            # trade signal init
+            macd_sig = MacdSignal(df)
+            mfi_sig = MfiSignal(df)
+            obv_sig = ObvSignal(df)
+            rsi_sig = RsiSignal(df)
+            vzo_sig = VzoSignal(df)
+
+            if macd_sig.buy() or mfi_sig.buy() or obv_sig.buy() or rsi_sig.buy() or vzo_sig.buy():
+                # self.portfolio.append(ass.symbol)
+                self.portfolio.append(ass)  # let's try appending the whole asset and extracting the title outside of AssetSelector
 
     @staticmethod
     def _candlestick_patterns(c1: pd.Series, c2: pd.Series, c3: pd.Series) -> str:
@@ -191,7 +232,7 @@ class AssetSelector:
 
         return direction
 
-    def get_asset_dataframe(self, asset, backtest: bool = False, limit: int = None):
+    def get_asset_dataframe(self, asset: Asset, backtest: bool = False, limit: int = None):
         """
 
         :param asset:
@@ -199,14 +240,12 @@ class AssetSelector:
         :param limit:
         :return:
         """
-        if not asset or asset is None:
-            raise AssetValidationException('[!] Invalid asset')
         if backtest:
             if self.offset is None:
                 raise AssetValidationException('[!] Unable to backtest without an offset period.')
             now = datetime.now(timezone('EST'))
             beginning = now - timedelta(days=self.offset)
-            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit, start=beginning, end=now)
+            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit, start=str(beginning), end=str(now))
         else:
             df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit)
         return df
