@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from broker import BrokerException, BrokerValidationException
+from alpaca_trade_api.entity import Account, Clock, Calendar, Asset, Position, Order, Watchlist, Bars
+import alpaca_trade_api as API
 import pandas as pd
 
 
 class Broker(object):
 
-    def __init__(self, api):
+    def __init__(self, api: API):
 
         if not api or api is None:
             raise BrokerValidationException('[!] API instance required.')
@@ -27,7 +29,7 @@ class Broker(object):
         raise NotImplementedError
 
     """Data grabbing methods"""
-    def get_account(self):
+    def get_account(self) -> Account:
         try:
             result = self.api.get_account()
         except BrokerException as err:
@@ -36,7 +38,7 @@ class Broker(object):
         else:
             return result
 
-    def get_clock(self):
+    def get_clock(self) -> Clock:
         """Get the API clock object.
 
         :return:
@@ -47,16 +49,10 @@ class Broker(object):
             print('[!] Unable to get the clock.')
             raise err
 
-    def get_calendar(self, start_date, end_date):
+    def get_calendar(self, start_date: str, end_date: str) -> Calendar:
         """
         Requests Dates data from Alpaca and returns it as a list of Calendar objects.
         """
-        if not start_date or start_date is None:
-            raise BrokerValidationException('[!] Invalid start_date.')
-
-        if not end_date or end_date is None:
-            raise BrokerValidationException('[!] Invalid end_date.')
-
         try:
             result = self.api.get_calendar(start_date, end_date)
         except BrokerException as err:
@@ -65,7 +61,7 @@ class Broker(object):
         else:
             return result
 
-    def get_assets(self):
+    def get_assets(self) -> list:
         """Get assets from Alpaca API.
 
         :return:
@@ -78,14 +74,11 @@ class Broker(object):
         else:
             return result
 
-    def get_asset(self, symbol):
+    def get_asset(self, symbol: str) -> Asset:
         """Get an asset by ticker symbol from the Alpaca API.
 
         :return:
         """
-        if not symbol or symbol is None:
-            raise BrokerValidationException('[!] Invalid symbol.')
-
         try:
             result = self.api.get_asset(symbol=symbol)
         except BrokerException as err:
@@ -94,7 +87,7 @@ class Broker(object):
         else:
             return result
 
-    def get_positions(self):
+    def get_positions(self) -> list:
         """Get a list of open positions for a given account.
 
         :return:
@@ -107,15 +100,12 @@ class Broker(object):
         else:
             return result
 
-    def get_position(self, symbol):
+    def get_position(self, symbol: str) -> Position:
         """Get any open positions for a given symbol.
 
         :param symbol:
         :return:
         """
-        if not symbol or symbol is None:
-            raise BrokerValidationException('[!] Invalid symbol.')
-
         try:
             result = self.api.get_position(symbol)
         except BrokerException as err:
@@ -124,7 +114,7 @@ class Broker(object):
         else:
             return result
 
-    def close_all_positions(self):
+    def close_all_positions(self) -> list:
         """Liquidate all positions. API returns 500 error (wtf?) when posiiotn cannot be closed.
 
         :return:
@@ -137,14 +127,11 @@ class Broker(object):
         else:
             return result
 
-    def close_position(self, symbol):
+    def close_position(self, symbol: str) -> Order:
         """Close position for a given symbol.
 
         :return:
         """
-        if not symbol or symbol is None:
-            raise BrokerValidationException('[!] Invalid symbol.')
-
         try:
             result = self.api.close_position(symbol)
         except BrokerException as err:
@@ -153,14 +140,14 @@ class Broker(object):
         else:
             return result
 
-    def get_orders(self, status='open', limit=50, after=None, until=None, direction='desc'):
+    def get_orders(self, status: str = 'open', limit: int = 50, after: str = None, until: str = None, direction: str = 'desc') -> list:
         """Get a list of orders for a given accountt.
 
         :param status: 'open', 'closed', or 'all'. API defaults to open, so does this
         :param limit: API default is 50, with a limit of 500
         :param after: Include only pos
         :param until:
-         :param direction:
+        :param direction:
         :return:
         """
         try:
@@ -171,7 +158,7 @@ class Broker(object):
         else:
             return result
 
-    def get_order(self, order_id, client_order_id=None):
+    def get_order(self, order_id: str, client_order_id: str = None) -> Order:
         """Get an order for the given order_id.
 
         :param order_id:
@@ -197,15 +184,15 @@ class Broker(object):
         return result
 
     def submit_order(self,
-                     symbol,
-                     quantity,
-                     transaction_side,
-                     transaction_type,
-                     time_in_force,
-                     limit_price=None,
-                     stop_price=None,
-                     extended_hours=False,
-                     client_order_id=None):
+                     symbol: str,
+                     quantity: int,
+                     transaction_side: str,
+                     transaction_type: str,
+                     time_in_force: str,
+                     limit_price: float = None,
+                     stop_price: float = None,
+                     extended_hours: bool = False,
+                     client_order_id: str = None) -> Order:
         """Submit an order using a reference to the Alpaca API.
 
         :param symbol: Ticker symbol to trade
@@ -219,10 +206,7 @@ class Broker(object):
         :param client_order_id:
         :return:
         """
-        if not symbol or symbol is None:
-            raise BrokerValidationException('[!] Invalid ticker symbol.')
-
-        if not quantity or quantity is None or len(quantity) < 1:
+        if quantity < 1:
             raise BrokerValidationException('[!] Invalid qty.')
 
         if not transaction_side or transaction_side not in ['buy', 'sell']:
@@ -259,12 +243,12 @@ class Broker(object):
             return result
 
     def replace_order(self,
-                     order_id,
-                     quantity=None,
-                     time_in_force=None,
-                     limit_price=None,
-                     stop_price=None,
-                     client_order_id=None):
+                     order_id: str,
+                     quantity: int = None,
+                     time_in_force: str = None,
+                     limit_price: float = None,
+                     stop_price: float = None,
+                     client_order_id: str = None) -> Order:
         """Submit an order using a reference to the Alpaca API.
 
         :param order_id: Ticker symbol to trade
@@ -275,16 +259,13 @@ class Broker(object):
         :param client_order_id:
         :return:
         """
-        if not order_id or order_id is None:
-            raise BrokerValidationException('[!] Invalid ticker symbol.')
-
         try:
             # get an order so we can grab iuts type
             transaction_type = self.get_order(order_id)
-        except BrokerException as err:
+        except BrokerException:
             raise BrokerValidationException('[!] A transaction_type is needed from the order object to validate stop and limit price parameters.')
 
-        if not quantity or quantity is None or len(quantity) < 1:
+        if quantity < 1:
             raise BrokerValidationException('[!] Invalid qty.')
 
         # validate stop_price and limit_price if need be
@@ -302,20 +283,18 @@ class Broker(object):
         else:
             return result
 
-    def cancel_all_orders(self):
+    def cancel_all_orders(self) -> None:
         """Try to close all orders. API returns 500 error (wtf?) when posiiotn cannot be closed.
 
         :return:
         """
         try:
-            result = self.api.cancel_all_orders()
+            self.api.cancel_all_orders()
         except BrokerException as err:
             print('[!] An error occurred when canceling orders.')
             raise err
-        else:
-            return result
 
-    def cancel_order(self, order_id):
+    def cancel_order(self, order_id: str) -> None:
         """Cancel order for a given order_id.
 
         :return:
@@ -324,19 +303,17 @@ class Broker(object):
             raise BrokerValidationException('[!] Invalid symbol.')
 
         try:
-            result = self.api.close_position(order_id)
+            self.api.close_position(order_id)
         except BrokerException as err:
             print(f'[!] An error occurred when canceling order {order_id}.')
             raise err
-        else:
-            return result
 
     def get_asset_df(self,
-                     symbol,
-                     period,
-                     limit=1000,
-                     start=None,
-                     end=None):
+                     symbol: str,
+                     period: str,
+                     limit: int = 1000,
+                     start: str = None,
+                     end: str = None) -> pd.DataFrame or None:
         """Get a set of bars from the API given a symbol, a time period and a starting time.
 
         :param symbol:
@@ -346,15 +323,6 @@ class Broker(object):
         :param end:
         :return:
         """
-        if not symbol or symbol is None:
-            raise BrokerValidationException('[!] Invalid symbol.')
-
-        if not period or period is None:
-            raise BrokerValidationException('[!] Must present a valid period type.')
-
-        if start is None or end is None:
-            raise BrokerValidationException('[!] Must present start and end dates.')
-
         try:
             result = self.api.get_barset(symbol, period, limit=limit, start=start, end=end)
         except BrokerException as err:
@@ -365,7 +333,7 @@ class Broker(object):
         else:
             return self._bar_df(result[symbol])
 
-    def get_watchlists(self):
+    def get_watchlists(self) -> list:
         """Get all watchlists from the Alpaca API.
 
         These will be how we separate our buckets of assets based on intended trading strategy.
@@ -380,15 +348,12 @@ class Broker(object):
         else:
             return result
 
-    def get_watchlist(self, watchlist_id):
+    def get_watchlist(self, watchlist_id: str) -> Watchlist:
         """Get a list of items in a watchlist by watchlist_id, from the Alpaca API.
 
         :param watchlist_id:
         :return:
         """
-        if not watchlist_id or watchlist_id is None:
-            raise BrokerValidationException('[!] Invalid watchlist_id.')
-
         try:
             result = self.api.get_watchlist(watchlist_id=watchlist_id)
         except BrokerException as err:
@@ -397,15 +362,12 @@ class Broker(object):
         else:
             return result
 
-    def add_watchlist(self, watchlist_name):
+    def add_watchlist(self, watchlist_name: str) -> Watchlist:
         """Add a new watchlist.
 
         :param watchlist_name:
         :return:
         """
-        if not watchlist_name or watchlist_name is None or watchlist_name is '':
-            raise BrokerValidationException('[!] Invalid watchlist_name.')
-
         try:
             result = self.api.add_watchlist(watchlist_name=watchlist_name)
         except BrokerException as err:
@@ -414,19 +376,13 @@ class Broker(object):
         else:
             return result
 
-    def add_to_watchlist(self, watchlist_id, symbol):
+    def add_to_watchlist(self, watchlist_id: str, symbol: str) -> Watchlist:
         """Add a symbol to a watchlist.
 
         :param watchlist_id:
         :param symbol:
         :return:
         """
-        if not watchlist_id or watchlist_id is None:
-            raise BrokerValidationException('[!] Invalid watchlist_id.')
-
-        if not symbol or symbol is None:
-            raise BrokerValidationException('[!] Invalid symbol.')
-
         try:
             result = self.api.add_to_watchlist(watchlist_id=watchlist_id, symbol=symbol)
         except BrokerException as err:
@@ -435,15 +391,12 @@ class Broker(object):
         else:
             return result
 
-    def clear_watchlist(self, watchlist_id):
+    def clear_watchlist(self, watchlist_id: str) -> Watchlist:
         """Remove all items in the assets collection of a given watchlist_id.
 
         :param watchlist_id: ID of the watchlist containing the assets we want to purge
         :return:
         """
-        if not watchlist_id or watchlist_id is None:
-            raise BrokerValidationException('[!] Invalid watchlist_id.')
-
         try:
             result = self.get_watchlist(watchlist_id)
         except BrokerException as err:
@@ -468,7 +421,7 @@ class Broker(object):
             return result
 
     @staticmethod
-    def _bar_df(bars):
+    def _bar_df(bars: Bars):
         """Given a collection of candlestick bars, return a dataframe.
         Dataframe should contain keys:
             - time, open, high, low, close, volume
@@ -488,23 +441,23 @@ class Broker(object):
         return data
 
     @staticmethod
-    def calculate_tolerable_risk(balance, risk_pct):
+    def calculate_tolerable_risk(balance: float, risk_pct: float):
         """Calculate the risk dollar amount of a balance given a percentage.
 
         :param balance:
         :param risk_pct:
         :return:
         """
-        if not balance or balance is None or balance == 0:
+        if balance == 0:
             raise ValueError('[!] valid balance is required.')
 
-        if not risk_pct or risk_pct is None or risk_pct == 0:
+        if risk_pct == 0:
             raise ValueError('[!] risk_pct cannot be zero.')
 
         return float(balance) * float(risk_pct)
 
     @staticmethod
-    def calculate_position_size(price, trading_balance, risk_pct=.10):
+    def calculate_position_size(price: float, trading_balance: float, risk_pct: float = .10):
         """Given a stock price, available traselfding balance, and a risk percentage, calculate a position size for a trade.
 
         :param price:
@@ -512,13 +465,6 @@ class Broker(object):
         :param risk_pct:
         :return:
         """
-
-        if not price or price is None:
-            raise ValueError('[!] A price is required for this calculation.')
-
-        if not trading_balance or trading_balance is None:
-            raise ValueError('[!] A trading_balance is required for this calculation.')
-
         if risk_pct == 0:
             raise ValueError('[!] risk_pct cannot be zero.')
 
