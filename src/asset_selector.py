@@ -7,7 +7,6 @@ from py_trade_signal.mfi import MfiSignal
 from py_trade_signal.obv import ObvSignal
 from py_trade_signal.rsi import RsiSignal
 from py_trade_signal.vzo import VzoSignal
-from alpaca_trade_api.entity import Asset
 from datetime import datetime, timedelta
 from util import time_from_datetime
 from broker.broker import Broker
@@ -148,8 +147,8 @@ class AssetSelector:
         self.portfolio = []
         for ass in self.tradeable_assets:
             if len(self.portfolio) >= self.poolsize:
-                # exit the filter process
-                break
+                # exit the filter process -- we have all the stocks we want
+                return
 
             if self.backtesting:
                 start = time_from_datetime(self.backtest_beginning)
@@ -167,7 +166,12 @@ class AssetSelector:
 
             # is the most recent date in the data frame the end date?
             df_end_date = str(df.iloc[-1].name).split(' ')[0]
-            has_end_date = df_end_date in end
+            # time delta between df_end_date and end
+            bt_end = datetime.strptime(end.split('T')[0], '%Y-%m-%d')
+            df_end = datetime.strptime(df_end_date, '%Y-%m-%d')
+            datediff = bt_end - df_end
+            # if the last available data is older than 7 days, move on
+            has_end_date = abs(datediff.days) < 7
             if not has_end_date:
                 continue
 
@@ -231,21 +235,3 @@ class AssetSelector:
             direction = 'bear'
 
         return direction
-
-    def get_asset_dataframe(self, asset: Asset, backtest: bool = False, limit: int = None):
-        """
-
-        :param asset:
-        :param backtest:
-        :param limit:
-        :return:
-        """
-        if backtest:
-            if self.offset is None:
-                raise AssetValidationException('[!] Unable to backtest without an offset period.')
-            now = datetime.now(timezone('EST'))
-            beginning = now - timedelta(days=self.offset)
-            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit, start=str(beginning), end=str(now))
-        else:
-            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit)
-        return df
