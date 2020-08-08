@@ -2,12 +2,17 @@
 # -*- coding: utf-8 -*-
 from src.sentiment_analysis import SentimentAnalysis, SentimentAnalysisException
 from src.edgar_interface import EdgarInterface
-from py_trade_signal import TradeSignal
+from py_trade_signal.macd import MacdSignal
+from py_trade_signal.mfi import MfiSignal
+from py_trade_signal.obv import ObvSignal
+from py_trade_signal.rsi import RsiSignal
+from py_trade_signal.vzo import VzoSignal
 from datetime import datetime, timedelta
 from util import time_from_datetime
+from broker.broker import Broker
+from argparse import Namespace
 from pytz import timezone
-# removing for now until the state of the PR is determined
-# from alpaca_trade_api.stocktwits import REST
+import pandas as pd
 
 
 class AssetException(Exception):
@@ -24,7 +29,7 @@ class DataframeException(AssetException):
 
 class AssetSelector:
 
-    def __init__(self, broker, cli_args, edgar_token=None):
+    def __init__(self, broker: Broker, cli_args: Namespace, edgar_token: str = None):
         """Initialize the asset selector with an optional edgar token
 
         TODO: Incorporate Twitter api and trade signals
@@ -84,8 +89,10 @@ class AssetSelector:
         else:
             self.min_stock_price = 0
 
-        if 'bear' in cli_args.algorithm:
+        if 'bear' in cli_args.algorithm or 'short' in cli_args.algorithm:
             self.shorts_wanted = True
+        else:
+            self.shorts_wanted = False
 
         if cli_args.poolsize is not None:
             self.poolsize = cli_args.poolsize
@@ -104,63 +111,155 @@ class AssetSelector:
         self.assets_by_filing = None
         self.portfolio = None
 
-        # initialize trade signal
-        self.signaler = TradeSignal()
-
         # setting api key to None for now because I'm not using authenticated endpoints
         # self.stocktwits = REST(api_key=None)
 
         self.sentiment_analyzer = SentimentAnalysis()
 
         # init stage two:
-        self.get_assets(self.asset_class, self.algorithm)
+        # self.get_assets(self.asset_class, self.algorithm)
+        self.get_assets(self.asset_class)
 
-    def get_assets(self, asset_class, algorithm):
+    def get_assets(self, asset_class: str) -> None:   # , algorithm: str) -> None:
         """ Second method of two stage init process. """
-        if asset_class is None:
-            raise AssetValidationException('[!] Invalid asset_class.')
-
-        if algorithm is None:
-            raise AssetValidationException('[!] Invalid algorithm.')
-
         if asset_class == 'equity':
-            raw_assets = self._raw_equity_assets()
-            self._tradeable_equity_assets(raw_assets, algorithm)
+            raw_assets = self.broker.get_assets()
+            if self.shorts_wanted:
+                self._shortable(raw_assets)
+            else:
+                self._longable(raw_assets)
         else:
             raise NotImplementedError('[!] Crypto and forex asset trading is coming soon.')
 
-    def _raw_equity_assets(self):
-        """Get assets from Alpaca API and assign them to self.raw_assets."""
-        return self.broker.get_assets()
+    def _longable(self, asset_list: list, limit: int = 1000) -> None:
+        """Scrub the list of assets from the Alpaca API response and get just the longable stocks we can trade.
 
-    def _tradeable_equity_assets(self, asset_list, algorithm, short=False):
-        """Scrub the list of assets from the Alpaca API response and get just the ones we can trade.
+        :param asset_list: list
+        :param limit: int
+        :return: None
+        """
+        self.tradeable_assets = [a for a in asset_list if a.tradable and a.marginable]
 
-        :param asset_list:
+        self.portfolio = []
+        for ass in self.tradeable_assets:
+            if len(self.portfolio) >= self.poolsize:
+                # exit the filter process -- we have all the stocks we want
+                return
+
+            if self.backtesting:
+                start = time_from_datetime(self.backtest_beginning)
+                end = time_from_datetime(self.beginning)
+            else:
+                start = time_from_datetime(self.beginning)
+                end = time_from_datetime(self.now)
+
+            # get the dataframe
+            df = self.broker.get_asset_df(ass.symbol, self.period, limit=limit, start=start, end=end)
+
+            # guard clauses to make sure we have enough data to work with
+            if df is None or df.empty:
+                continue
+
+            # is the most recent date in the data frame the end date?
+            df_end_date = str(df.iloc[-1].name).split(' ')[0]
+            # time delta between df_end_date and end
+            bt_end = datetime.strptime(end.split('T')[0], '%Y-%m-%d')
+            df_end = datetime.strptime(df_end_date, '%Y-%m-%d')
+            datediff = bt_end - df_end
+            # if the last available data is older than 7 days, move on
+            has_end_date = abs(datediff.days) < 7
+            if not has_end_date:
+                continue
+
+            # throw it away if the price is out of our min-max range
+            close = df["close"].iloc[-1]
+            if close > self.max_stock_price or close < self.min_stock_price:
+                continue
+
+            # trade signal init
+            macd_sig = MacdSignal(df)
+            mfi_sig = MfiSignal(df)
+            obv_sig = ObvSignal(df)
+            rsi_sig = RsiSignal(df)
+            vzo_sig = VzoSignal(df)
+
+            if macd_sig.buy() or mfi_sig.buy() or obv_sig.buy() or rsi_sig.buy() or vzo_sig.buy():
+                self.portfolio.append(ass)
+
+    def _shortable(self, asset_list: list, limit: int = 1000) -> None:
+        """Scrub the list of assets from the Alpaca API response and get just the short stocks we can trade.
+
+        :param asset_list: list
+        :param limit: int
+        :return: None
+        """
+        self.tradeable_assets = [a for a in asset_list if
+                                 a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
+        self.portfolio = []
+        for ass in self.tradeable_assets:
+            if len(self.portfolio) >= self.poolsize:
+                # exit the filter process -- we have all the stocks we want
+                return
+
+            if self.backtesting:
+                start = time_from_datetime(self.backtest_beginning)
+                end = time_from_datetime(self.beginning)
+            else:
+                start = time_from_datetime(self.beginning)
+                end = time_from_datetime(self.now)
+
+            # get the dataframe
+            df = self.broker.get_asset_df(ass.symbol, self.period, limit=limit, start=start, end=end)
+
+            # guard clauses to make sure we have enough data to work with
+            if df is None or df.empty:
+                continue
+
+            # is the most recent date in the data frame the end date?
+            df_end_date = str(df.iloc[-1].name).split(' ')[0]
+            # time delta between df_end_date and end
+            bt_end = datetime.strptime(end.split('T')[0], '%Y-%m-%d')
+            df_end = datetime.strptime(df_end_date, '%Y-%m-%d')
+            datediff = bt_end - df_end
+            # if the last available data is older than 7 days, move on
+            has_end_date = abs(datediff.days) < 7
+            if not has_end_date:
+                continue
+
+            # throw it away if the price is out of our min-max range
+            close = df["close"].iloc[-1]
+            if close > self.max_stock_price or close < self.min_stock_price:
+                continue
+
+            # trade signal init
+            macd_sig = MacdSignal(df)
+            mfi_sig = MfiSignal(df)
+            obv_sig = ObvSignal(df)
+            rsi_sig = RsiSignal(df)
+            vzo_sig = VzoSignal(df)
+
+            if macd_sig.sell() or mfi_sig.sell() or obv_sig.sell() or rsi_sig.sell() or vzo_sig.sell():
+                self.portfolio.append(ass)
+
+    def candle_pattern_direction(self, dataframe: pd.DataFrame) -> str:
+        """Given a series, get the candlestick pattern of the last 3 periods.
+
+        :param dataframe:
         :return:
         """
-        if not asset_list or asset_list is None or len(asset_list) is 0:
-            raise AssetValidationException('[!] Invalid asset_list.')
+        pattern = self._pattern(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
+        direction = None
 
-        if algorithm not in [item for item in dir(self) if '__' not in item]:
-            raise AssetValidationException('[!] Unable to determine asset selector method in the context of AssetSelector')
+        if pattern in ['hammer', 'inverseHammer']:
+            direction = 'bull'
 
-        if short:
-            self.tradeable_assets = [a for a in asset_list if
-                                     a.tradable and a.shortable and a.marginable and a.easy_to_borrow]
-        else:
-            self.tradeable_assets = [a for a in asset_list if a.tradable and a.marginable]
+        if pattern in ['bullishEngulfing', 'piercingLine', 'morningStar', 'threeWhiteSoldiers']:
+            direction = 'bear'
 
-        # populate our portfolio based on our trading algorithm
-        selection_method = getattr(self, algorithm)
-
-        if self.backtesting:
-            selection_method(self.backtesting, self.offset)
-        else:
-            selection_method()
+        return direction
 
     @staticmethod
-    def _candlestick_patterns(c1, c2, c3):
+    def _pattern(c1: pd.Series, c2: pd.Series, c3: pd.Series) -> str:
         """Pilfered from Alpaca Slack channel
 
         :param c1:
@@ -168,9 +267,6 @@ class AssetSelector:
         :param c3:
         :return:
         """
-        if c1 is None or c2 is None or c3 is None:
-            raise AssetValidationException('[!] Must provide valid candlestick values to obtain a pattern.')
-
         pattern = None
         # LOCH bullish
         if c1.low < c1.open < c1.close <= c1.high and c1.high - c1.close < c1.open - c1.low and c1.close - c1.open < c1.open - c1.low:
@@ -189,43 +285,3 @@ class AssetSelector:
         if c3.low <= c3.open < c3.close < c3.high and c2.low <= c2.open < c2.close < c2.high and c1.low <= c1.open < c1.close < c1.high and c3.close <= c2.open and c2.close <= c1.open:
             pattern = 'threeWhiteSoldiers'
         return pattern
-
-    def candle_pattern_direction(self, dataframe):
-        """Given a series, get the candlestick pattern of the last 3 periods.
-
-        :param dataframe:
-        :return:
-        """
-        if dataframe is None:
-            raise DataframeException('[!] Dataframe cannot be None.')
-
-        pattern = self._candlestick_patterns(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
-        direction = None
-
-        if pattern in ['hammer', 'inverseHammer']:
-            direction = 'bull'
-
-        if pattern in ['bullishEngulfing', 'piercingLine', 'morningStar', 'threeWhiteSoldiers']:
-            direction = 'bear'
-
-        return direction
-
-    def get_asset_dataframe(self, asset, backtest=False, limit=None):
-        """
-
-        :param asset:
-        :param backtest:
-        :param limit:
-        :return:
-        """
-        if not asset or asset is None:
-            raise AssetValidationException('[!] Invalid asset')
-        if backtest:
-            if self.offset is None:
-                raise AssetValidationException('[!] Unable to backtest without an offset period.')
-            now = datetime.now(timezone('EST'))
-            beginning = now - timedelta(days=self.offset)
-            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit, until=time_from_datetime(beginning))
-        else:
-            df = self.broker.get_asset_df(asset.symbol, self.period, limit=limit)
-        return df

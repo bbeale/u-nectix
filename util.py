@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 from pandas.io.json import json_normalize
 from pandas.errors import EmptyDataError
-from datetime import date
-import pandas as pd
+from datetime import date, time, datetime
 import numpy as np
 import configparser
 import argparse
@@ -12,7 +11,7 @@ import json
 import os
 
 
-def time_from_timestamp(time_stamp, time_format=None):
+def time_from_timestamp(time_stamp: int or float, time_format: str = None) -> str:
     """Return a formatted date in open market hours given a timestamp.
 
     :param time_stamp:
@@ -26,10 +25,12 @@ def time_from_timestamp(time_stamp, time_format=None):
     return date.fromtimestamp(time_stamp).strftime(time_format)
 
 
-def time_from_datetime(dt):
-    if dt is None:
-        raise ValueError
-    return dt.strftime('%Y-%m-%dT%H:%M:%S.%f-04:00')
+def time_from_datetime(dt: datetime or str) -> str:
+    return datetime.strftime(dt, '%Y-%m-%dT%H:%M:%S.%f-04:00')
+
+
+def date_from_datetime(dt: datetime or str) -> str:
+    return datetime.strftime(dt, '%Y-%m-%d')
 
 
 def bullish_sequence(num1, num2, num3):
