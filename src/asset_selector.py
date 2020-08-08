@@ -120,16 +120,15 @@ class AssetSelector:
     def get_assets(self, asset_class: str, algorithm: str) -> None:
         """ Second method of two stage init process. """
         if asset_class == 'equity':
-            raw_assets = self._raw_equity_assets()
-            self._tradeable_equity_assets(raw_assets, algorithm)
+            raw_assets = self.broker.get_assets()
+            if self.shorts_wanted:
+                self._shortable(raw_assets, algorithm)
+            else:
+                self._longable(raw_assets, algorithm)
         else:
             raise NotImplementedError('[!] Crypto and forex asset trading is coming soon.')
 
-    def _raw_equity_assets(self) -> list:
-        """Get assets from Alpaca API and assign them to self.raw_assets."""
-        return self.broker.get_assets()
-
-    def _tradeable_equity_assets(self, asset_list: list, algorithm: str, limit: int = 1000, short: bool = False) -> None:
+    def _longable(self, asset_list: list, algorithm: str, limit: int = 1000, short: bool = False) -> None:
         """Scrub the list of assets from the Alpaca API response and get just the ones we can trade.
 
         :param asset_list:
@@ -188,11 +187,30 @@ class AssetSelector:
             vzo_sig = VzoSignal(df)
 
             if macd_sig.buy() or mfi_sig.buy() or obv_sig.buy() or rsi_sig.buy() or vzo_sig.buy():
-                # self.portfolio.append(ass.symbol)
-                self.portfolio.append(ass)  # let's try appending the whole asset and extracting the title outside of AssetSelector
+                self.portfolio.append(ass)
+
+    def _shortable(self, asset_list: list, algorithm: str, limit: int = 1000, short: bool = False) -> None:
+        raise NotImplementedError
+
+    def candle_pattern_direction(self, dataframe: pd.DataFrame) -> str:
+        """Given a series, get the candlestick pattern of the last 3 periods.
+
+        :param dataframe:
+        :return:
+        """
+        pattern = self._pattern(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
+        direction = None
+
+        if pattern in ['hammer', 'inverseHammer']:
+            direction = 'bull'
+
+        if pattern in ['bullishEngulfing', 'piercingLine', 'morningStar', 'threeWhiteSoldiers']:
+            direction = 'bear'
+
+        return direction
 
     @staticmethod
-    def _candlestick_patterns(c1: pd.Series, c2: pd.Series, c3: pd.Series) -> str:
+    def _pattern(c1: pd.Series, c2: pd.Series, c3: pd.Series) -> str:
         """Pilfered from Alpaca Slack channel
 
         :param c1:
@@ -218,20 +236,3 @@ class AssetSelector:
         if c3.low <= c3.open < c3.close < c3.high and c2.low <= c2.open < c2.close < c2.high and c1.low <= c1.open < c1.close < c1.high and c3.close <= c2.open and c2.close <= c1.open:
             pattern = 'threeWhiteSoldiers'
         return pattern
-
-    def candle_pattern_direction(self, dataframe: pd.DataFrame) -> str:
-        """Given a series, get the candlestick pattern of the last 3 periods.
-
-        :param dataframe:
-        :return:
-        """
-        pattern = self._candlestick_patterns(dataframe.iloc[-3], dataframe.iloc[-2], dataframe.iloc[-1])
-        direction = None
-
-        if pattern in ['hammer', 'inverseHammer']:
-            direction = 'bull'
-
-        if pattern in ['bullishEngulfing', 'piercingLine', 'morningStar', 'threeWhiteSoldiers']:
-            direction = 'bear'
-
-        return direction
