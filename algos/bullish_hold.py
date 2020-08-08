@@ -21,8 +21,6 @@ class Algorithm(AssetSelector, BaseAlgo):
     def total_asset_value(self, positions, date):
         """ does what it says
 
-        TODO: Move this to Broker
-
         :param positions:
         :param date:
         :return:
@@ -71,8 +69,6 @@ class Algorithm(AssetSelector, BaseAlgo):
         Per Medium article:
             Rating = Number of volume standard deviations * momentum.
 
-        TODO: move to AssetSelector since it seems that we want assets with favorable volume ratings...
-
         :param algo_time:
         :param window_size:
         :return:
@@ -88,8 +84,7 @@ class Algorithm(AssetSelector, BaseAlgo):
             # TODO: Consolidate these time usages
             formatted_time = algo_time.date().strftime("%Y-%m-%dT%H:%M:%S.%f-04:00")
 
-        symbols = self.portfolio
-
+        symbols = [asset.symbol for asset in self.portfolio]
         while index < len(symbols):
             barset = self.broker.api.get_barset(
                 symbols=symbols,
@@ -137,11 +132,9 @@ def run(broker: Broker, args: Namespace):
 
     if not broker or broker is None:
         raise BrokerException("[!] A broker instance is required.")
-    else:
-        broker = broker
 
     if args.algorithm is None:
-        args.algorithm = "bullish_overnight_momentum"
+        args.algorithm = "bullish_hold"
     if args.testperiods is None:
         args.testperiods = 30
 
