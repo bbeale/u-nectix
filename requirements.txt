@@ -64,6 +64,6 @@ ujson==2.0.3
 urllib3==1.24.3
 v20==3.0.25.0
 websocket-client==0.57.0
-websockets==8.1
+websockets==9.1
 Werkzeug==1.0.0
 wrapt==1.12.0
