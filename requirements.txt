@@ -60,7 +60,7 @@ tensorflow-estimator==2.2.0
 termcolor==1.1.0
 tqdm==4.43.0
 twitter==1.18.0
-ujson==2.0.3
+ujson==5.4.0
 urllib3==1.26.5
 v20==3.0.25.0
 websocket-client==0.57.0
