@@ -65,5 +65,5 @@ urllib3==1.26.5
 v20==3.0.25.0
 websocket-client==0.57.0
 websockets==9.1
-Werkzeug==1.0.0
+Werkzeug==2.2.3
 wrapt==1.12.0
